@@ -1,11 +1,20 @@
+import type { Metadata } from "next";
 import { Users } from "lucide-react";
 import { MembersExplorer } from "@/components/members-explorer";
 import { members, parties, districts } from "@/data/mock";
 
-export const metadata = {
-  title: "議員一覧 | みらいのわかやま県議会",
+export const metadata: Metadata = {
+  title: "議員一覧",
   description:
-    "和歌山県議会議員の一覧。会派・選挙区・年代で絞り込み、個人の活動を見ることができます。",
+    "和歌山県議会議員（令和8年4月1日現在・現員41名）の一覧。会派・選挙区・年代で絞り込み、一人ひとりの活動やプロフィールを確認できます。",
+  alternates: { canonical: "/members" },
+  openGraph: {
+    title: "議員一覧 | みらいのわかやま県議会",
+    description:
+      "和歌山県議会議員（現員41名）の一覧。会派・選挙区・年代で絞り込み、一人ひとりの活動を確認できます。",
+    url: "/members",
+    type: "website",
+  },
 };
 
 export default function MembersPage() {

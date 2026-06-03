@@ -18,10 +18,66 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+const SITE_URL = "https://mirai-wakayama-ken-gikai.vercel.app";
+const SITE_NAME = "みらいのわかやま県議会";
+const SITE_DESCRIPTION =
+  "和歌山県議会の日程・予算審議・議員一人ひとりの活動を、誰もが分かりやすく追える可視化ポータル（シビックテックのプロトタイプ）。本会議までのカウントダウン、当初予算6,499億円の使い道、議員41名のプロフィールを公開しています。";
+
 export const metadata: Metadata = {
-  title: "みらいのわかやま県議会 | 和歌山県議会を可視化するポータル",
-  description:
-    "和歌山県議会の日程・予算審議・議員情報を、誰もが分かりやすく追える可視化ポータル（プロトタイプ）。",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} | 和歌山県議会を可視化するポータル`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: [
+    "和歌山県議会",
+    "和歌山県",
+    "県議会",
+    "議会",
+    "県議会議員",
+    "議員",
+    "議会日程",
+    "定例会",
+    "予算",
+    "当初予算",
+    "シビックテック",
+    "オープンガバメント",
+    "可視化",
+    "議会ウォッチ",
+  ],
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "government",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "ja_JP",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} | 和歌山県議会を可視化するポータル`,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} | 和歌山県議会を可視化するポータル`,
+    description: SITE_DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
 };
 
 export default function RootLayout({

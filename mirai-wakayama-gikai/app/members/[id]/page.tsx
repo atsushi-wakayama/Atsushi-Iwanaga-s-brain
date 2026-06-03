@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -25,13 +26,28 @@ export function generateStaticParams() {
 
 type PageProps = { params: Promise<{ id: string }> };
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const member = members.find((m) => m.id === id);
   if (!member) return { title: "議員が見つかりません" };
+  const roleText = member.role ? `${member.role}・` : "";
+  const description = `和歌山県議会議員 ${member.name}（${roleText}${member.party}・${member.district}・${member.age}歳）の基本情報・注力テーマ・活動サマリー。会派や選挙区などの公開情報を分かりやすく掲載しています。`;
+  const title = `${member.name}（${member.district}）`;
   return {
-    title: `${member.name}（${member.district}） | みらいのわかやま県議会`,
-    description: `${member.name}議員（${member.party}・${member.age}歳）の基本情報・発言傾向・活動サマリー。`,
+    title,
+    description,
+    alternates: { canonical: `/members/${member.id}` },
+    openGraph: {
+      title: `${title} | みらいのわかやま県議会`,
+      description,
+      url: `/members/${member.id}`,
+      type: "profile",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} | みらいのわかやま県議会`,
+      description,
+    },
   };
 }
 
