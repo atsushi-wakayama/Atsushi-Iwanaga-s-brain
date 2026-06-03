@@ -38,15 +38,20 @@ export function SiteFooter() {
               <p className="font-semibold text-slate-900 mb-2">探す</p>
               <ul className="space-y-1.5">
                 <li>
-                  <Link
-                    href="/members"
-                    className="hover:text-wakayama-orange"
-                  >
+                  <Link href="/members" className="hover:text-wakayama-orange">
                     議員一覧
                   </Link>
                 </li>
-                <li>議会日程</li>
-                <li>予算審議</li>
+                <li>
+                  <Link href="/#schedule" className="hover:text-wakayama-orange">
+                    議会日程
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/about" className="hover:text-wakayama-orange">
+                    県政について
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>

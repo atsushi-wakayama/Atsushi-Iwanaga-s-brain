@@ -350,6 +350,96 @@ export const recentMovements: NewsItem[] = [
 ];
 
 // ===========================================================
+// 令和8年度 6月補正予算（案）
+// 出典：和歌山県財政課「令和8年度6月補正予算（案）の概要」（令和8年6月）
+// ===========================================================
+
+export type BudgetFlowItem = { label: string; value: number }; // 単位：百万円
+
+export type SupplementProject = {
+  category: string;
+  title: string;
+  dept: string; // 担当課
+  amountThousand: number; // 単位：千円
+  summary: string;
+};
+
+export const juneSupplement = {
+  fiscalYear: "令和8年度",
+  name: "6月補正予算（案）",
+  sessionName: "令和8年6月定例会",
+  headline:
+    "中小企業支援や県立高等学校ICT環境整備等のため、一般会計で総額26億89百万円の増額補正を行います。",
+  amountText: "26億89百万円",
+  // 一般会計（単位：百万円）
+  generalAccount: {
+    before: 649851, // 補正前 現計予算
+    supplement: 2689, // 6月補正
+    after: 652540, // 6月補正後現計
+  },
+  // 歳入の補正（単位：百万円）
+  revenue: [
+    { label: "国庫支出金", value: 2675 },
+    { label: "諸収入", value: 189 },
+    { label: "県債", value: 11 },
+    { label: "分担金及び負担金", value: 1 },
+    { label: "繰入金", value: -186 },
+  ] as BudgetFlowItem[],
+  // 歳出の補正（単位：百万円）
+  expenditure: [
+    { label: "県立高等学校ICT環境整備", value: 1672 },
+    { label: "中小企業支援", value: 1000 },
+    { label: "災害対応等", value: 15 },
+    { label: "地域公共交通支援", value: 3 },
+  ] as BudgetFlowItem[],
+  // 主要事業
+  projects: [
+    {
+      category: "中小企業支援",
+      title: "和歌山県中小企業成長促進",
+      dept: "商工企画課",
+      amountThousand: 1000000,
+      summary:
+        "県内中小企業者の持続的な賃上げ実現のため、省力化や業務効率化等の生産性向上に資する設備投資等を行う事業者への支援、及び原材料費高騰分に対する支援。",
+    },
+    {
+      category: "地域公共交通支援",
+      title: "和歌山電鐵貴志川線支援",
+      dept: "総合交通政策課",
+      amountThousand: 2732,
+      summary:
+        "完全上下分離方式の導入に向け、和歌山電鐵貴志川線地域公共交通活性化再生協議会が実施する調査事業に対する負担金。",
+    },
+    {
+      category: "県立高等学校ICT環境整備",
+      title: "教育ネットワーク・ICT環境整備",
+      dept: "教育政策課",
+      amountThousand: 1671863,
+      summary:
+        "県立高等学校における生徒貸与用 1人1台端末の更新を実施。",
+    },
+    {
+      category: "災害対応等",
+      title: "災害緊急がけ崩れ対策",
+      dept: "砂防課",
+      amountThousand: 12000,
+      summary:
+        "令和8年3月の降雨により発生したがけ崩れの緊急対策工事を実施。",
+    },
+    {
+      category: "災害対応等",
+      title: "訴訟解決金",
+      dept: "健康体育課",
+      amountThousand: 2500,
+      summary:
+        "県立高等学校における部活動中の事故に係る損害賠償請求事件について、原告との和解に要する解決金。",
+    },
+  ] as SupplementProject[],
+  sourceNote:
+    "出典：和歌山県財政課「令和8年度6月補正予算（案）の概要」（令和8年6月）",
+};
+
+// ===========================================================
 // 議員データ
 // ===========================================================
 

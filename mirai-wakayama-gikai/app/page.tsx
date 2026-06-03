@@ -2,13 +2,10 @@ import Link from "next/link";
 import {
   CalendarDays,
   Radio,
-  FileText,
   ExternalLink,
   ArrowRight,
-  PieChart as PieChartIcon,
-  BarChart3,
   Users,
-  Sparkles,
+  Wallet,
   Newspaper,
   ChevronDown,
 } from "lucide-react";
@@ -18,18 +15,13 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BudgetPieChart } from "@/components/charts/budget-pie-chart";
-import { PriorityBarChart } from "@/components/charts/priority-bar-chart";
 import {
   assemblyStatus,
   schedule,
   sessionWindows,
-  budgetPicks,
-  budgetBreakdown,
-  priorityPolicies,
+  juneSupplement,
   recentMovements,
 } from "@/data/mock";
 
@@ -69,8 +61,6 @@ function formatDate(iso: string) {
 }
 
 export default function HomePage() {
-  const totalBudget = budgetBreakdown.reduce((s, b) => s + b.value, 0);
-
   // 今日（サーバー時刻）を基準に会期状態とカウントダウンを動的算出
   const today = new Date();
   const currentSession = sessionWindows.find((w) => {
@@ -355,129 +345,104 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Budget picks */}
-      <section id="budget" className="mx-auto max-w-6xl px-4 sm:px-6 py-14">
-        <div className="mb-6">
-          <div className="flex items-center gap-2 text-wakayama-orange-dark">
-            <Sparkles size={18} />
-            <p className="text-sm font-semibold tracking-wider uppercase">
-              Budget Pickup
-            </p>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">
-            令和8年度当初予算 6本の政策の柱
-          </h2>
-          <p className="text-sm text-slate-600 mt-1">
-            新総合計画の初年度予算。一般会計 6,499億円（対前年度+360億円、当初予算として過去最大規模）のうち、新総合計画で掲げる6本の政策の柱を紹介します。
-          </p>
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-3">
-          {budgetPicks.map((pick) => (
-            <Card
-              key={pick.id}
-              className="flex flex-col hover:shadow-md transition-shadow"
-            >
-              <CardHeader className="pb-3">
-                <Badge variant="default" className="w-fit mb-2">
-                  {pick.category}
-                </Badge>
-                <CardTitle className="text-lg leading-snug">
-                  {pick.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex-1 pb-3">
-                <CardDescription className="text-slate-700 leading-relaxed">
-                  {pick.summary}
-                </CardDescription>
-                <ul className="mt-4 space-y-1.5">
-                  {pick.highlights.map((h) => (
-                    <li
-                      key={h}
-                      className="text-xs text-slate-600 flex items-start gap-2"
-                    >
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-wakayama-orange" />
-                      <span>{h}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter>
-                <a
-                  href={pick.documentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-wakayama-blue hover:text-wakayama-blue-dark"
-                >
-                  <FileText size={14} />
-                  議案・関連資料を見る
-                  <ExternalLink size={12} />
-                </a>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Infographics */}
-      <section className="bg-white border-y border-slate-200">
+      {/* 6月補正予算（案） */}
+      <section id="budget" className="bg-white border-y border-slate-200">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-14">
           <div className="mb-6">
-            <div className="flex items-center gap-2 text-wakayama-blue-dark">
-              <PieChartIcon size={18} />
+            <div className="flex items-center gap-2 text-wakayama-orange-dark">
+              <Wallet size={18} />
               <p className="text-sm font-semibold tracking-wider uppercase">
-                Infographic
+                Supplementary Budget
               </p>
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">
-              予算のゆくえ / 重点施策
+              {juneSupplement.fiscalYear}
+              {juneSupplement.name}
             </h2>
-            <p className="text-sm text-slate-600 mt-1">
-              知事の提案理由説明から、予算の使い道と重点施策を可視化しました。
+            <p className="text-sm text-slate-700 mt-2 leading-relaxed max-w-3xl">
+              {juneSupplement.headline}
             </p>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChartIcon size={18} className="text-wakayama-orange" />
-                  一般会計 歳出の内訳
-                </CardTitle>
-                <CardDescription>
-                  人件費・公債費・投資的経費・社会保障関係経費ほか（億円）
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <BudgetPieChart data={budgetBreakdown} />
-                <p className="text-center text-sm text-slate-600 mt-2">
-                  令和8年度 一般会計{" "}
-                  <span className="font-bold text-slate-900">
-                    {totalBudget.toLocaleString()}
-                  </span>{" "}
-                  億円
-                  <span className="block text-[11px] text-slate-400 mt-1">
-                    ※ 令和8年度当初予算（案）の概要より
-                  </span>
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 size={18} className="text-wakayama-orange" />
-                  政策の柱別 配分イメージ
-                </CardTitle>
-                <CardDescription>
-                  新総合計画「6本の柱」の配分イメージ（億円・概算）
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <PriorityBarChart data={priorityPolicies} />
-              </CardContent>
-            </Card>
+          {/* 補正額サマリー */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <p className="text-xs font-semibold text-slate-500">
+                補正前 現計予算
+              </p>
+              <p className="mt-1 text-xl font-bold text-slate-900">
+                {juneSupplement.generalAccount.before.toLocaleString()}
+                <span className="text-sm font-medium text-slate-500 ml-1">
+                  百万円
+                </span>
+              </p>
+            </div>
+            <div className="rounded-xl border border-wakayama-orange/30 bg-wakayama-orange-soft p-5">
+              <p className="text-xs font-semibold text-wakayama-orange-dark">
+                6月補正額
+              </p>
+              <p className="mt-1 text-xl font-bold text-wakayama-orange-dark">
+                +{juneSupplement.generalAccount.supplement.toLocaleString()}
+                <span className="text-sm font-medium ml-1">百万円</span>
+              </p>
+              <p className="text-[11px] text-wakayama-orange-dark/80 mt-0.5">
+                （{juneSupplement.amountText}）
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <p className="text-xs font-semibold text-slate-500">
+                6月補正後 現計
+              </p>
+              <p className="mt-1 text-xl font-bold text-slate-900">
+                {juneSupplement.generalAccount.after.toLocaleString()}
+                <span className="text-sm font-medium text-slate-500 ml-1">
+                  百万円
+                </span>
+              </p>
+            </div>
           </div>
+
+          {/* 主要事業（カテゴリ） */}
+          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {juneSupplement.expenditure.map((e) => (
+              <Card key={e.label}>
+                <CardHeader className="pb-2">
+                  <CardDescription className="text-xs">歳出</CardDescription>
+                  <CardTitle className="text-base leading-snug">
+                    {e.label}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-lg font-bold text-wakayama-orange-dark tabular-nums">
+                    {e.value.toLocaleString()}
+                    <span className="text-xs font-medium text-slate-500 ml-1">
+                      百万円
+                    </span>
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              href="/about#june-supplement"
+              className="inline-flex items-center gap-2 rounded-md bg-wakayama-orange px-6 h-11 text-sm font-semibold text-white hover:bg-wakayama-orange/90 shadow-sm transition-colors"
+            >
+              6月補正の主要事業を見る
+              <ArrowRight size={16} />
+            </Link>
+            <Link
+              href="/about"
+              className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-6 h-11 text-sm font-semibold text-slate-900 hover:bg-slate-50 transition-colors"
+            >
+              県政について（当初予算の概要）
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+          <p className="mt-4 text-[11px] text-slate-400">
+            {juneSupplement.sourceNote}
+          </p>
         </div>
       </section>
     </div>
