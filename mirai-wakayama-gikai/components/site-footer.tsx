@@ -55,11 +55,28 @@ export function SiteFooter() {
               </ul>
             </div>
             <div>
-              <p className="font-semibold text-slate-900 mb-2">公式情報</p>
+              <p className="font-semibold text-slate-900 mb-2">サイト情報</p>
               <ul className="space-y-1.5">
-                <li>和歌山県議会 公式</li>
-                <li>議会中継</li>
-                <li>会議録検索</li>
+                <li>
+                  <Link href="/policy" className="hover:text-wakayama-orange">
+                    運営者情報
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/policy#privacy" className="hover:text-wakayama-orange">
+                    プライバシーポリシー
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/policy#terms" className="hover:text-wakayama-orange">
+                    利用規約
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/policy#contact" className="hover:text-wakayama-orange">
+                    お問い合わせ
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
