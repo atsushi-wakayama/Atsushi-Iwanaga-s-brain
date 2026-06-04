@@ -12,9 +12,9 @@ import {
 // ──────────────────────────────────────────────
 // 運営情報（ここを書き換えれば全体に反映されます）
 // ──────────────────────────────────────────────
-const OPERATOR = "Atsushi Iwanaga（個人）";
-const OPERATOR_TYPE = "個人運営（シビックテック有志）";
-const CONTACT_EMAIL = "atsushi.iwanaga@atsushi-iwanaga.jp";
+const OPERATOR = "みらいのわかやま県議会 Project（有志）";
+const OPERATOR_TYPE = "有志による非営利運営（シビックテック）";
+const CONTACT_EMAIL = "info@atsushi-iwanaga.jp";
 const LAST_UPDATED = "2026年6月4日";
 
 export const metadata: Metadata = {
