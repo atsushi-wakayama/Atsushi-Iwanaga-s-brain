@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>和歌山県 交通事故マップ 2019-2024</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<style>
+  html,body{margin:0;height:100%;font-family:"Hiragino Sans","Yu Gothic",sans-serif}
+  #map{position:absolute;top:0;bottom:0;left:0;right:0}
+  .panel{position:absolute;top:10px;left:10px;z-index:1000;background:rgba(255,255,255,.95);
+    padding:12px 14px;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.3);font-size:13px;max-width:240px}
+  .panel h1{font-size:15px;margin:0 0 6px}
+  .panel .sub{color:#666;font-size:11px;margin-bottom:8px}
+  .years{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+  .years button{flex:1;min-width:44px;padding:4px 6px;font-size:12px;border:1px solid #bbb;
+    background:#fff;border-radius:5px;cursor:pointer;font-family:inherit}
+  .years button.active{background:#1565c0;color:#fff;border-color:#1565c0;font-weight:bold}
+  .stat{display:flex;justify-content:space-between;margin:2px 0}
+  .stat b{font-variant-numeric:tabular-nums}
+  .dead{color:#d12}
+  .inj{color:#06c}
+  .legend{margin-top:10px;border-top:1px solid #eee;padding-top:8px;font-size:12px}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+  table.city{margin-top:8px;border-collapse:collapse;width:100%;font-size:11px}
+  table.city td{padding:1px 2px} table.city td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+  .credit{position:absolute;bottom:2px;left:4px;z-index:1000;font-size:10px;color:#555;background:rgba(255,255,255,.7);padding:1px 4px;border-radius:3px}
+  .hot-row{display:flex;align-items:center;gap:6px;margin:6px 0 2px;font-size:12px}
+  .hot-row select{font-family:inherit;font-size:12px;padding:2px 4px;border:1px solid #bbb;border-radius:4px}
+  .hot-pin{position:relative;font-size:20px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))}
+  .hot-n{position:absolute;right:-7px;bottom:-5px;background:#c1121f;color:#fff;font-size:10px;
+    font-weight:bold;border-radius:9px;padding:0 4px;border:1px solid #fff;line-height:14px}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="panel">
+  <h1>和歌山県 交通事故マップ</h1>
+  <div class="sub">2019〜2024年 / 警察庁 交通事故統計オープンデータ</div>
+  <div class="years" id="year-btns"></div>
+  <div class="hot-row">
+    <span>⚠️ 多発地点</span>
+    <select id="hot-th">
+      <option value="2">2回以上</option>
+      <option value="3" selected>3回以上</option>
+      <option value="4">4回以上</option>
+      <option value="5">5回以上</option>
+    </select>
+    <b id="t-hot" style="margin-left:auto;color:#c1121f">-</b>
+  </div>
+  <div class="stat"><span>総件数</span><b id="t-total">-</b></div>
+  <div class="stat dead"><span>死亡事故</span><b id="t-dead">-</b></div>
+  <div class="stat inj"><span>負傷事故</span><b id="t-inj">-</b></div>
+  <div class="stat"><span>死者数 / 負傷者数</span><b id="t-cas">-</b></div>
+  <div class="legend">
+    <div><i style="background:#d12"></i>死亡事故</div>
+    <div><i style="background:#1976d2"></i>負傷事故</div>
+    <div style="margin-top:4px;color:#666">右上で点／ヒートマップ切替<br>上の年ボタンで年を絞込</div>
+  </div>
+  <div class="legend" style="max-height:150px;overflow:auto">
+    <b>市区町村別 件数</b>
+    <table class="city" id="city-tbl"></table>
+  </div>
+</div>
+<div class="credit">背景地図：地理院タイル（国土地理院）</div>
+
+<script src="data.js"></script>
+<script>
+const A = window.ACCIDENTS || [];
+const YEARS = [...new Set(A.map(d=>d.year))].sort();
+
+const map = L.map('map', {center:[33.9,135.3], zoom:9, preferCanvas:true});
+L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
+  {attribution:'地理院タイル', maxZoom:18}).addTo(map);
+
+function popup(d){
+  return `<b>${d.dt}（${d.youbi}）</b><br>`
+    + `<span style="color:${d.fatal?'#d12':'#06c'}">■</span> ${d.naiyou}事故`
+    + `（死者${d.dead}・負傷${d.injured}）<br>`
+    + `市区町村：${d.city}<br>`
+    + `類型：${d.ruikei}<br>`
+    + `当事者：${d.pa} ／ ${d.pb}<br>`
+    + `道路形状：${d.keijyo}<br>`
+    + `天候：${d.tenko}／${d.chuya}`;
+}
+
+// レイヤーオブジェクトは保持し、中身だけ差し替える（トグル状態を維持）
+const injLayer = L.layerGroup().addTo(map);
+const deadLayer = L.layerGroup().addTo(map);
+const hotspotLayer = L.layerGroup().addTo(map);
+const heat = L.heatLayer([], {radius:18, blur:22, maxZoom:14,
+  gradient:{0.2:'#3b8',0.4:'#7d3',0.6:'#fd0',0.8:'#f80',1.0:'#d00'}});
+
+function hotspotIcon(count){
+  return L.divIcon({className:'', iconSize:[26,26], iconAnchor:[13,13], popupAnchor:[0,-12],
+    html:`<div class="hot-pin">⚠️<span class="hot-n">${count}</span></div>`});
+}
+
+L.control.layers(null, {
+  '負傷事故（点）': injLayer,
+  '死亡事故（点）': deadLayer,
+  '⚠️ 事故多発地点': hotspotLayer,
+  'ヒートマップ（密集度）': heat
+}, {collapsed:false}).addTo(map);
+
+// 年で絞り込んで描画・集計を更新
+let currentYear = 'all';
+function render(year){
+  currentYear = year;
+  const data = (year==='all') ? A : A.filter(d=>d.year===year);
+
+  injLayer.clearLayers(); deadLayer.clearLayers();
+  const heatPts = [];
+  data.forEach(d=>{
+    heatPts.push([d.lat, d.lon, d.fatal?1.0:0.4]);
+    const m = L.circleMarker([d.lat,d.lon], {
+      radius: d.fatal?7:4, color: d.fatal?'#a00':'#1565c0', weight: d.fatal?2:1,
+      fillColor: d.fatal?'#e53935':'#42a5f5', fillOpacity: d.fatal?0.9:0.6
+    }).bindPopup(popup(d));
+    (d.fatal?deadLayer:injLayer).addLayer(m);
+  });
+  heat.setLatLngs(heatPts);
+
+  // 事故多発地点（⚠️）：約44m四方のグリッドで集計し、しきい値以上をピン
+  hotspotLayer.clearLayers();
+  const CELL = 0.0004;
+  const cells = {};
+  data.forEach(d=>{
+    const k = Math.round(d.lat/CELL)+'_'+Math.round(d.lon/CELL);
+    (cells[k] || (cells[k] = [])).push(d);
+  });
+  const th = +document.getElementById('hot-th').value;
+  let hotCount = 0;
+  Object.values(cells).forEach(arr=>{
+    if(arr.length < th) return;
+    hotCount++;
+    const lat = arr.reduce((s,d)=>s+d.lat,0)/arr.length;
+    const lon = arr.reduce((s,d)=>s+d.lon,0)/arr.length;
+    const dd = arr.filter(d=>d.fatal).length;
+    const ys = [...new Set(arr.map(d=>d.year))].sort();
+    L.marker([lat,lon], {icon:hotspotIcon(arr.length), zIndexOffset:1000})
+      .bindPopup(`<b>⚠️ 事故多発地点</b><br>この付近で <b>${arr.length}件</b>`
+        + `（死亡${dd}・負傷${arr.length-dd}）<br>発生年：${ys.join('、')}`)
+      .addTo(hotspotLayer);
+  });
+  document.getElementById('t-hot').textContent = hotCount + '地点';
+
+  // 統計
+  const dead = data.filter(d=>d.fatal).length;
+  const cas_d = data.reduce((s,d)=>s+d.dead,0);
+  const cas_i = data.reduce((s,d)=>s+d.injured,0);
+  document.getElementById('t-total').textContent = data.length.toLocaleString();
+  document.getElementById('t-dead').textContent  = dead.toLocaleString();
+  document.getElementById('t-inj').textContent   = (data.length-dead).toLocaleString();
+  document.getElementById('t-cas').textContent   = cas_d+' / '+cas_i;
+
+  // 市区町村別
+  const cc = {};
+  data.forEach(d=>cc[d.city]=(cc[d.city]||0)+1);
+  document.getElementById('city-tbl').innerHTML =
+    Object.entries(cc).sort((a,b)=>b[1]-a[1])
+      .map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+
+  // ボタンの選択状態
+  document.querySelectorAll('#year-btns button').forEach(b=>
+    b.classList.toggle('active', b.dataset.y===String(year)));
+}
+
+// 年ボタン生成（全年 + 各年）
+const btnWrap = document.getElementById('year-btns');
+[['all','全年'], ...YEARS.map(y=>[y, y+'年'])].forEach(([y,label])=>{
+  const b = document.createElement('button');
+  b.textContent = label; b.dataset.y = String(y);
+  b.onclick = ()=>render(y==='all'?'all':Number(y));
+  btnWrap.appendChild(b);
+});
+
+document.getElementById('hot-th').addEventListener('change', ()=>render(currentYear));
+
+render('all');
+
+// コンテナ幅が確定した時点で確実に和歌山県全体へフィットさせる
+const bounds = A.length ? L.latLngBounds(A.map(d=>[d.lat,d.lon])) : null;
+let fitted = false;
+function fitAll(){
+  const el = document.getElementById('map');
+  if(!el || el.clientWidth < 50) return;
+  map.invalidateSize();
+  if(bounds && !fitted){ map.fitBounds(bounds, {padding:[20,20]}); fitted = true; }
+}
+new ResizeObserver(fitAll).observe(document.getElementById('map'));
+window.addEventListener('load', fitAll);
+fitAll();
+</script>
+</body>
+</html>
