@@ -12,8 +12,12 @@
   #map{position:absolute;top:0;bottom:0;left:0;right:0}
   .panel{position:absolute;top:10px;left:10px;z-index:1000;background:rgba(255,255,255,.95);
     padding:12px 14px;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.3);font-size:13px;max-width:240px}
-  .panel h1{font-size:15px;margin:0 0 6px}
+  .panel h1{font-size:15px;margin:0 0 6px;display:flex;align-items:center;justify-content:space-between;gap:8px}
   .panel .sub{color:#666;font-size:11px;margin-bottom:8px}
+  .toggle{display:none;border:1px solid #bbb;background:#fff;border-radius:6px;
+    width:30px;height:30px;font-size:15px;line-height:1;cursor:pointer;flex:none}
+  .panel.collapsed .panel-body{display:none}
+  .panel.collapsed .sub{display:none}
   .years{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
   .years button{flex:1;min-width:44px;padding:4px 6px;font-size:12px;border:1px solid #bbb;
     background:#fff;border-radius:5px;cursor:pointer;font-family:inherit}
@@ -32,13 +36,28 @@
   .hot-pin{position:relative;font-size:20px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))}
   .hot-n{position:absolute;right:-7px;bottom:-5px;background:#c1121f;color:#fff;font-size:10px;
     font-weight:bold;border-radius:9px;padding:0 4px;border:1px solid #fff;line-height:14px}
+  /* スマホ */
+  @media (max-width:600px){
+    .panel{top:8px;left:8px;right:8px;max-width:none;padding:10px 12px;font-size:13px}
+    .panel-body{max-height:42vh;overflow:auto;-webkit-overflow-scrolling:touch}
+    .toggle{display:inline-flex;align-items:center;justify-content:center}
+    .years button{padding:6px 6px;min-width:40px}
+    .hot-row select{padding:4px 6px}
+    .leaflet-control-layers{font-size:13px}
+    .credit{font-size:9px}
+    /* 折りたたみパネルのヘッダー下に地図コントロールをずらす */
+    .leaflet-top{top:50px}
+  }
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div class="panel">
-  <h1>和歌山県 交通事故マップ</h1>
+<div class="panel" id="panel">
+  <h1>和歌山県 交通事故マップ
+    <button class="toggle" id="panel-toggle" aria-label="パネル開閉">▲</button>
+  </h1>
   <div class="sub">2019〜2024年 / 警察庁 交通事故統計オープンデータ</div>
+  <div class="panel-body" id="panel-body">
   <div class="years" id="year-btns"></div>
   <div class="hot-row">
     <span>⚠️ 多発地点</span>
@@ -63,6 +82,7 @@
     <b>市区町村別 件数</b>
     <table class="city" id="city-tbl"></table>
   </div>
+  </div><!-- /panel-body -->
 </div>
 <div class="credit">背景地図：地理院タイル（国土地理院）</div>
 
@@ -71,7 +91,8 @@
 const A = window.ACCIDENTS || [];
 const YEARS = [...new Set(A.map(d=>d.year))].sort();
 
-const map = L.map('map', {center:[33.9,135.3], zoom:9, preferCanvas:true});
+const map = L.map('map', {center:[33.9,135.3], zoom:9, preferCanvas:true, zoomControl:false});
+L.control.zoom({position:'topright'}).addTo(map);
 L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
   {attribution:'地理院タイル', maxZoom:18}).addTo(map);
 
@@ -98,12 +119,21 @@ function hotspotIcon(count){
     html:`<div class="hot-pin">⚠️<span class="hot-n">${count}</span></div>`});
 }
 
+const isMobile = window.innerWidth <= 600;
 L.control.layers(null, {
   '負傷事故（点）': injLayer,
   '死亡事故（点）': deadLayer,
   '⚠️ 事故多発地点': hotspotLayer,
   'ヒートマップ（密集度）': heat
-}, {collapsed:false}).addTo(map);
+}, {collapsed: isMobile}).addTo(map);
+
+// パネル開閉トグル（スマホで地図を広く使えるように）
+const panel = document.getElementById('panel');
+document.getElementById('panel-toggle').addEventListener('click', ()=>{
+  const c = panel.classList.toggle('collapsed');
+  document.getElementById('panel-toggle').textContent = c ? '▼' : '▲';
+});
+if(isMobile){ panel.classList.add('collapsed'); document.getElementById('panel-toggle').textContent='▼'; }
 
 // 年で絞り込んで描画・集計を更新
 let currentYear = 'all';
