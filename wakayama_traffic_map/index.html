@@ -131,7 +131,7 @@ function hotspotIcon(count){
 // 警察署 公式ワースト交差点レイヤー（PDF由来）
 const officialLayer = L.layerGroup().addTo(map);
 (function buildOfficial(){
-  const wareki = {2022:'R4',2023:'R5',2024:'R6',2025:'R7'};
+  const wareki = {2021:'R3',2022:'R4',2023:'R5',2024:'R6',2025:'R7'};
   (window.OFFICIAL_HOTSPOTS||[]).forEach(d=>{
     const yrs = Object.keys(d.years).map(Number).sort();
     const maxCount = Math.max(...yrs.map(y=>d.years[y].count));
