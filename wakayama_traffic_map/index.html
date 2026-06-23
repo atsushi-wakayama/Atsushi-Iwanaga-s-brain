@@ -36,6 +36,14 @@
   .hot-pin{position:relative;font-size:20px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))}
   .hot-n{position:absolute;right:-7px;bottom:-5px;background:#c1121f;color:#fff;font-size:10px;
     font-weight:bold;border-radius:9px;padding:0 4px;border:1px solid #fff;line-height:14px}
+  .ofc-pin{position:relative;font-size:22px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+  .ofc-pin.chronic{filter:drop-shadow(0 0 0 #c1121f) drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+  .ofc-n{position:absolute;right:-8px;bottom:-5px;background:#1d3557;color:#fff;font-size:10px;
+    font-weight:bold;border-radius:9px;padding:0 4px;border:1.5px solid #fff;line-height:15px}
+  .ofc-n.chronic{background:#c1121f}
+  .popup-tbl{border-collapse:collapse;margin-top:4px;font-size:12px}
+  .popup-tbl th,.popup-tbl td{border:1px solid #ddd;padding:1px 5px;text-align:center}
+  .popup-tbl th{background:#f2f4f7}
   /* スマホ */
   @media (max-width:600px){
     .panel{top:8px;left:8px;right:8px;max-width:none;padding:10px 12px;font-size:13px}
@@ -87,6 +95,7 @@
 <div class="credit">背景地図：地理院タイル（国土地理院）</div>
 
 <script src="data.js"></script>
+<script src="gobo_intersections.js"></script>
 <script>
 const A = window.ACCIDENTS || [];
 const YEARS = [...new Set(A.map(d=>d.year))].sort();
@@ -119,11 +128,36 @@ function hotspotIcon(count){
     html:`<div class="hot-pin">⚠️<span class="hot-n">${count}</span></div>`});
 }
 
+// 警察署 公式ワースト交差点レイヤー（PDF由来）
+const officialLayer = L.layerGroup().addTo(map);
+(function buildOfficial(){
+  const wareki = {2022:'R4',2023:'R5',2024:'R6',2025:'R7'};
+  (window.OFFICIAL_HOTSPOTS||[]).forEach(d=>{
+    const yrs = Object.keys(d.years).map(Number).sort();
+    const maxCount = Math.max(...yrs.map(y=>d.years[y].count));
+    const chronic = yrs.length >= 2;            // 複数年ランクイン＝慢性的
+    const icon = L.divIcon({className:'', iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-13],
+      html:`<div class="ofc-pin${chronic?' chronic':''}">🚦`
+        + `<span class="ofc-n${chronic?' chronic':''}">${maxCount}</span></div>`});
+    const rows = yrs.map(y=>{
+      const v=d.years[y];
+      return `<tr><td>${y}(${wareki[y]})</td><td>${v.rank}位</td><td>${v.count}件</td><td>${v.jinshin}</td></tr>`;
+    }).join('');
+    const html = `<b>🚦 ${d.name}</b>${chronic?' <span style="color:#c1121f;font-weight:bold">★'+yrs.length+'年</span>':''}<br>`
+      + `${d.city}／${d.route}<br>`
+      + `<table class="popup-tbl"><tr><th>年</th><th>順位</th><th>件数</th><th>人身</th></tr>${rows}</table>`
+      + (d.conf==='approx'?'<div style="color:#999;font-size:10px;margin-top:3px">※位置は概略（要確認）</div>':'')
+      + `<div style="color:#999;font-size:10px">出典：御坊警察署 多発交差点ﾜｰｽﾄﾗﾝｷﾝｸﾞ</div>`;
+    L.marker([d.lat,d.lon], {icon, zIndexOffset:2000}).bindPopup(html).addTo(officialLayer);
+  });
+})();
+
 const isMobile = window.innerWidth <= 600;
 L.control.layers(null, {
   '負傷事故（点）': injLayer,
   '死亡事故（点）': deadLayer,
-  '⚠️ 事故多発地点': hotspotLayer,
+  '⚠️ 事故多発地点（自動算出）': hotspotLayer,
+  '🚦 公式ワースト交差点（御坊署）': officialLayer,
   'ヒートマップ（密集度）': heat
 }, {collapsed: isMobile}).addTo(map);
 
