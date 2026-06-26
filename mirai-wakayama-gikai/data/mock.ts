@@ -778,7 +778,7 @@ const seeds: MemberSeed[] = [
   { id: "m17", name: "尾崎 要二", age: 72, district: "海南市・海草郡", party: "自由民主党県議団", office: { area: "海南市下津町上563-2", phone: "073-492-4884" } },
 
   // 橋本市（3）
-  { id: "m18", name: "岩田 弘彦", age: 66, district: "橋本市", party: "自由民主党県議団", role: "議長", office: { area: "橋本市東家一丁目367-5 田中ビル2F", phone: "0736-26-7660" } },
+  { id: "m18", name: "岩田 弘彦", age: 66, district: "橋本市", party: "自由民主党県議団", office: { area: "橋本市東家一丁目367-5 田中ビル2F", phone: "0736-26-7660" } },
   { id: "m19", name: "土井 裕美子", age: 66, district: "橋本市", party: "自由民主党県議団", office: { area: "橋本市隅田町芋生489-5", phone: "0736-34-0139" } },
   { id: "m20", name: "岡本 安弘", age: 57, district: "橋本市", party: "自由民主党県議団", office: { area: "橋本市高野口町名古曽402", phone: "0736-42-3720" } },
 
@@ -806,7 +806,7 @@ const seeds: MemberSeed[] = [
   { id: "m31", name: "川畑 哲哉", age: 48, district: "岩出市", party: "無所属クラブ", office: { area: "岩出市備前42 プチ・ツール2-H", phone: "0736-61-1155" } },
 
   // 伊都郡（1）
-  { id: "m32", name: "堀 龍雄", age: 74, district: "伊都郡", party: "自由民主党県議団", office: { area: "伊都郡かつらぎ町兄井197", phone: "0736-22-2886" } },
+  { id: "m32", name: "堀 龍雄", age: 74, district: "伊都郡", party: "自由民主党県議団", role: "議長", office: { area: "伊都郡かつらぎ町兄井197", phone: "0736-22-2886" } },
 
   // 有田郡（2）
   { id: "m33", name: "吉井 和視", age: 74, district: "有田郡", party: "自由民主党県議団", office: { area: "有田郡有田川町庄618", phone: "0737-52-5728" } },
@@ -818,11 +818,11 @@ const seeds: MemberSeed[] = [
   { id: "m37", name: "岩永 淳志", age: 27, district: "日高郡", party: "みらいの会", office: { area: "日高郡美浜町和田1138-290", phone: "080-8728-5352" } },
 
   // 西牟婁郡（2）
-  { id: "m38", name: "秋月 史成", age: 57, district: "西牟婁郡", party: "自由民主党県議団", role: "副議長", office: { area: "西牟婁郡上富田町朝来1364-1 1F", phone: "0739-33-7066" } },
+  { id: "m38", name: "秋月 史成", age: 57, district: "西牟婁郡", party: "自由民主党県議団", office: { area: "西牟婁郡上富田町朝来1364-1 1F", phone: "0739-33-7066" } },
   { id: "m39", name: "三栖 拓也", age: 39, district: "西牟婁郡", party: "自由民主党県議団", office: { area: "西牟婁郡白浜町3781-9", phone: "0739-82-1888" } },
 
   // 東牟婁郡（2）
-  { id: "m40", name: "佐藤 武治", age: 71, district: "東牟婁郡", party: "自由民主党県議団", office: { area: "東牟婁郡串本町潮岬2510-1", phone: "0735-62-2618" } },
+  { id: "m40", name: "佐藤 武治", age: 71, district: "東牟婁郡", party: "自由民主党県議団", role: "副議長", office: { area: "東牟婁郡串本町潮岬2510-1", phone: "0735-62-2618" } },
   { id: "m41", name: "谷 洋一", age: 77, district: "東牟婁郡", party: "一の会", office: { area: "東牟婁郡那智勝浦町浦神1219", phone: "0735-58-0141" } },
 ];
 

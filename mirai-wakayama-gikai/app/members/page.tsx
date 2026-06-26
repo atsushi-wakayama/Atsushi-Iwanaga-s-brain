@@ -30,11 +30,11 @@ export default function MembersPage() {
         議員を探す
       </h1>
       <p className="mt-2 text-sm text-slate-600 max-w-2xl">
-        和歌山県議会議員名簿（令和8年4月1日現在・定数42人／欠員1＝現員{" "}
+        和歌山県議会議員名簿（令和8年6月10日現在・定数42人／欠員1＝現員{" "}
         {members.length} 名）。会派・選挙区・年代で絞り込んで、一人ひとりの活動をチェックできます。
       </p>
       <p className="mt-2 text-xs text-slate-500">
-        ※議長：岩田 弘彦／副議長：秋月 史成（令和8年4月1日現在）
+        ※第96代議長：堀 龍雄／第102代副議長：佐藤 武治（令和8年6月10日現在）
       </p>
 
       <div className="mt-8">
