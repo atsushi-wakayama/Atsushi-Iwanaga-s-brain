@@ -96,6 +96,7 @@
 
 <script src="data.js"></script>
 <script src="gobo_intersections.js"></script>
+<script src="property_2025.js"></script>
 <script>
 const A = window.ACCIDENTS || [];
 const YEARS = [...new Set(A.map(d=>d.year))].sort();
@@ -152,12 +153,34 @@ const officialLayer = L.layerGroup().addTo(map);
   });
 })();
 
+// 物件事故 2025（物損）— 警察提供データ。件数が多いので初回表示時に生成
+const propertyLayer = L.layerGroup();
+const propCanvas = L.canvas({padding:0.5});
+let propBuilt = false;
+function buildProperty(){
+  if(propBuilt || !window.PROPERTY_2025) return;
+  propBuilt = true;
+  const P = window.PROPERTY_2025;
+  P.rows.forEach(r=>{
+    L.circleMarker([r[8], r[9]], {renderer:propCanvas, radius:3,
+      color:'#e8590c', weight:0.5, fillColor:'#ffa94d', fillOpacity:0.55})
+      .bindPopup(()=>`<b>${r[6]} ${r[7]}時台</b><br>`
+        + `<span style="color:#e8590c">■</span> 物件事故（${P.types[r[0]]}）<br>`
+        + `${P.cities[r[5]]}／${P.routes[r[1]]}<br>`
+        + `当事者：${P.partiesA[r[2]]} ／ ${P.partiesB[r[3]]}<br>`
+        + `<span style="color:#999;font-size:10px">${P.stations[r[4]]}${/隊$/.test(P.stations[r[4]])?'':'署'}／2025年 物損（座標は概略・日本測地系を変換）</span>`)
+      .addTo(propertyLayer);
+  });
+}
+map.on('overlayadd', e=>{ if(e.layer===propertyLayer) buildProperty(); });
+
 const isMobile = window.innerWidth <= 600;
 L.control.layers(null, {
   '負傷事故（点）': injLayer,
   '死亡事故（点）': deadLayer,
   '⚠️ 事故多発地点（自動算出）': hotspotLayer,
   '🚦 公式ワースト交差点（御坊署）': officialLayer,
+  '🟠 物件事故 2025（物損）': propertyLayer,
   'ヒートマップ（密集度）': heat
 }, {collapsed: isMobile}).addTo(map);
 
