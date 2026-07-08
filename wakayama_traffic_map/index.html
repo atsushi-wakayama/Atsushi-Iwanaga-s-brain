@@ -161,14 +161,18 @@ function buildProperty(){
   if(propBuilt || !window.PROPERTY_2025) return;
   propBuilt = true;
   const P = window.PROPERTY_2025;
+  // rows: [事故類型, 詳細, 路線, 当事者A, 当事者B, 警察署, 市区町村, 発生日, 時帯, 緯度, 経度]
   P.rows.forEach(r=>{
-    L.circleMarker([r[8], r[9]], {renderer:propCanvas, radius:3,
+    L.circleMarker([r[9], r[10]], {renderer:propCanvas, radius:3,
       color:'#e8590c', weight:0.5, fillColor:'#ffa94d', fillOpacity:0.55})
-      .bindPopup(()=>`<b>${r[6]} ${r[7]}時台</b><br>`
-        + `<span style="color:#e8590c">■</span> 物件事故（${P.types[r[0]]}）<br>`
-        + `${P.cities[r[5]]}／${P.routes[r[1]]}<br>`
-        + `当事者：${P.partiesA[r[2]]} ／ ${P.partiesB[r[3]]}<br>`
-        + `<span style="color:#999;font-size:10px">${P.stations[r[4]]}${/隊$/.test(P.stations[r[4]])?'':'署'}／2025年 物損（座標は概略。最寄り道路へ補正）</span>`)
+      .bindPopup(()=>{
+        const det = P.details[r[1]];
+        return `<b>${r[7]} ${r[8]}時台</b><br>`
+        + `<span style="color:#e8590c">■</span> 物件事故（${P.cats[r[0]]}${det?'／'+det:''}）<br>`
+        + `${P.cities[r[6]]}／${P.routes[r[2]]}<br>`
+        + `当事者：${P.partiesA[r[3]]} ／ ${P.partiesB[r[4]]}<br>`
+        + `<span style="color:#999;font-size:10px">${P.stations[r[5]]}${/隊$/.test(P.stations[r[5]])?'':'署'}／2025年 物損（座標は概略）</span>`;
+      })
       .addTo(propertyLayer);
   });
 }
