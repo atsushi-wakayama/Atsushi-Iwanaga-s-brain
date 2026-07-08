@@ -168,7 +168,7 @@ function buildProperty(){
         + `<span style="color:#e8590c">■</span> 物件事故（${P.types[r[0]]}）<br>`
         + `${P.cities[r[5]]}／${P.routes[r[1]]}<br>`
         + `当事者：${P.partiesA[r[2]]} ／ ${P.partiesB[r[3]]}<br>`
-        + `<span style="color:#999;font-size:10px">${P.stations[r[4]]}${/隊$/.test(P.stations[r[4]])?'':'署'}／2025年 物損（座標は概略・日本測地系を変換）</span>`)
+        + `<span style="color:#999;font-size:10px">${P.stations[r[4]]}${/隊$/.test(P.stations[r[4]])?'':'署'}／2025年 物損（座標は概略。最寄り道路へ補正）</span>`)
       .addTo(propertyLayer);
   });
 }
