@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第221回国会 議案の一覧</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card-bg: #ffffff;
+    --text: #1a1d23;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #1d4ed8;
+    --accent-light: #eff6ff;
+    --header-bg: #111827;
+    --header-text: #ffffff;
+
+    --status-success-bg: #dcfce7;
+    --status-success-text: #166534;
+    --status-pending-bg: #fef9c3;
+    --status-pending-text: #854d0e;
+    --status-senate-bg: #dbeafe;
+    --status-senate-text: #1e40af;
+    --status-done-bg: #e5e7eb;
+    --status-done-text: #374151;
+    --status-withdrawn-bg: #fee2e2;
+    --status-withdrawn-text: #991b1b;
+    --status-approved-bg: #ede9fe;
+    --status-approved-text: #5b21b6;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115;
+      --card-bg: #181b21;
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border: #2a2e37;
+      --accent: #60a5fa;
+      --accent-light: #1e2a44;
+      --header-bg: #0b0d11;
+      --header-text: #f3f4f6;
+
+      --status-success-bg: #14532d;
+      --status-success-text: #bbf7d0;
+      --status-pending-bg: #422006;
+      --status-pending-text: #fde68a;
+      --status-senate-bg: #1e3a8a;
+      --status-senate-text: #bfdbfe;
+      --status-done-bg: #374151;
+      --status-done-text: #e5e7eb;
+      --status-withdrawn-bg: #7f1d1d;
+      --status-withdrawn-text: #fecaca;
+      --status-approved-bg: #4c1d95;
+      --status-approved-text: #ddd6fe;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0f1115;
+    --card-bg: #181b21;
+    --text: #e5e7eb;
+    --text-muted: #9ca3af;
+    --border: #2a2e37;
+    --accent: #60a5fa;
+    --accent-light: #1e2a44;
+    --header-bg: #0b0d11;
+    --header-text: #f3f4f6;
+    --status-success-bg: #14532d;
+    --status-success-text: #bbf7d0;
+    --status-pending-bg: #422006;
+    --status-pending-text: #fde68a;
+    --status-senate-bg: #1e3a8a;
+    --status-senate-text: #bfdbfe;
+    --status-done-bg: #374151;
+    --status-done-text: #e5e7eb;
+    --status-withdrawn-bg: #7f1d1d;
+    --status-withdrawn-text: #fecaca;
+    --status-approved-bg: #4c1d95;
+    --status-approved-text: #ddd6fe;
+  }
+
+  :root[data-theme="light"] {
+    --bg: #f5f6f8;
+    --card-bg: #ffffff;
+    --text: #1a1d23;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #1d4ed8;
+    --accent-light: #eff6ff;
+    --header-bg: #111827;
+    --header-text: #ffffff;
+    --status-success-bg: #dcfce7;
+    --status-success-text: #166534;
+    --status-pending-bg: #fef9c3;
+    --status-pending-text: #854d0e;
+    --status-senate-bg: #dbeafe;
+    --status-senate-text: #1e40af;
+    --status-done-bg: #e5e7eb;
+    --status-done-text: #374151;
+    --status-withdrawn-bg: #fee2e2;
+    --status-withdrawn-text: #991b1b;
+    --status-approved-bg: #ede9fe;
+    --status-approved-text: #5b21b6;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", "Times New Roman", serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  header.page-header {
+    background: var(--header-bg);
+    color: var(--header-text);
+    padding: 28px 20px;
+  }
+
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  header.page-header h1 {
+    margin: 0 0 6px;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  header.page-header p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 0.9rem;
+  }
+
+  header.page-header a {
+    color: #93c5fd;
+    text-decoration: none;
+  }
+  header.page-header a:hover { text-decoration: underline; }
+
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .summary-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .summary-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    min-width: 84px;
+    text-align: center;
+    flex: 1 1 84px;
+  }
+
+  .summary-card .num {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .summary-card .label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
+  .controls {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 18px;
+    position: sticky;
+    top: 10px;
+    z-index: 10;
+  }
+
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .tab-btn {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .tab-btn:hover {
+    background: var(--accent-light);
+  }
+
+  .tab-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .search-input {
+    flex: 1 1 240px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+
+  .status-select {
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+
+  .result-count {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .table-wrap {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+  }
+
+  thead th {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    font-weight: 600;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    background: var(--card-bg);
+  }
+
+  tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--accent-light); }
+
+  .col-title { min-width: 260px; max-width: 480px; }
+  .col-num { color: var(--text-muted); white-space: nowrap; }
+
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .status-成立, .status-両院承認, .status-両院承諾 {
+    background: var(--status-success-bg);
+    color: var(--status-success-text);
+  }
+  .status-衆議院で審議中, .status-参議院で審議中 {
+    background: var(--status-pending-bg);
+    color: var(--status-pending-text);
+  }
+  .status-本院議了 {
+    background: var(--status-senate-bg);
+    color: var(--status-senate-text);
+  }
+  .status-撤回 {
+    background: var(--status-withdrawn-bg);
+    color: var(--status-withdrawn-text);
+  }
+
+  .info-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.82rem;
+  }
+  .info-link:hover { text-decoration: underline; }
+  .info-dash { color: var(--text-muted); }
+
+  .col-toggle {
+    width: 28px;
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  tr.bill-row.has-desc { cursor: pointer; }
+
+  .toggle-icon {
+    display: inline-block;
+    transition: transform 0.15s ease;
+    color: var(--accent);
+    font-size: 0.75rem;
+  }
+
+  tr.bill-row.expanded .toggle-icon {
+    transform: rotate(90deg);
+  }
+
+  tr.bill-row.expanded {
+    background: var(--accent-light);
+  }
+
+  tr.detail-row td {
+    padding: 0;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    left: 0;
+    width: var(--wrap-width, 100%);
+  }
+
+  .desc-box {
+    padding: 14px 16px 16px 40px;
+    background: var(--bg);
+    display: grid;
+    gap: 10px;
+    box-sizing: border-box;
+    position: absolute;
+    width: var(--wrap-width, 100%);
+  }
+
+  .desc-item .desc-label {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+
+  .desc-item p {
+    margin: 4px 0 0;
+    font-size: 0.86rem;
+    line-height: 1.75;
+    overflow-wrap: anywhere;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+  }
+
+  footer {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 20px 40px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  footer a { color: var(--accent); }
+
+  @media (max-width: 640px) {
+    .summary-card { flex: 1 1 70px; padding: 8px 10px; }
+    .summary-card .num { font-size: 1.1rem; }
+    .controls { position: static; }
+    table { font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <div class="header-inner">
+    <h1>第221回国会（特別会） 議案の一覧</h1>
+    <p>出典: <a href="https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/menu.htm" target="_blank" rel="noopener">衆議院ウェブサイト</a>の議案情報をもとに作成した非公式まとめサイトです。</p>
+  </div>
+</header>
+
+<main>
+  <div class="summary-row" id="summaryRow"></div>
+
+  <div class="controls">
+    <div class="tabs" id="tabs"></div>
+    <div class="filter-row">
+      <input type="text" class="search-input" id="searchInput" placeholder="議案件名で検索…">
+      <select class="status-select" id="statusSelect">
+        <option value="">審議状況: すべて</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="result-count" id="resultCount"></div>
+
+  <div class="table-wrap">
+    <table id="billsTable">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="empty-state" id="emptyState" style="display:none;">該当する議案はありません。</div>
+  </div>
+</main>
+
+<footer>
+  <p>本サイトは <a href="https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/menu.htm" target="_blank" rel="noopener">衆議院 立法情報「第221回国会 議案の一覧」</a> のデータをもとに作成した非公式のまとめです。最新・正確な情報は必ず衆議院公式サイトをご確認ください。「経過」「本文」等のリンク先情報は元サイトでのみ参照可能です。</p>
+</footer>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  const state = {
+    activeCategory: BILLS_DATA.categories[0].key,
+    query: "",
+    status: ""
+  };
+
+  const tabsEl = document.getElementById("tabs");
+  const searchInput = document.getElementById("searchInput");
+  const statusSelect = document.getElementById("statusSelect");
+  const tableHead = document.getElementById("tableHead");
+  const tableBody = document.getElementById("tableBody");
+  const resultCount = document.getElementById("resultCount");
+  const emptyState = document.getElementById("emptyState");
+  const summaryRow = document.getElementById("summaryRow");
+  const tableWrap = document.querySelector(".table-wrap");
+
+  function syncWrapWidth() {
+    if (!tableWrap) return;
+    tableWrap.style.setProperty("--wrap-width", tableWrap.clientWidth + "px");
+    document.querySelectorAll(".detail-row").forEach(tr => {
+      if (tr.style.display !== "none") {
+        const td = tr.querySelector("td");
+        const box = tr.querySelector(".desc-box");
+        if (td && box) td.style.height = box.scrollHeight + "px";
+      }
+    });
+  }
+  window.addEventListener("resize", syncWrapWidth);
+
+  function getCategory(key) {
+    return BILLS_DATA.categories.find(c => c.key === key);
+  }
+
+  function statusClass(status) {
+    return "status-" + String(status).replace(/[（）\s]/g, "");
+  }
+
+  function renderSummary() {
+    summaryRow.innerHTML = "";
+    BILLS_DATA.categories.forEach(cat => {
+      const card = document.createElement("div");
+      card.className = "summary-card";
+      card.innerHTML = `<div class="num">${cat.items.length}</div><div class="label">${cat.name}</div>`;
+      summaryRow.appendChild(card);
+    });
+  }
+
+  function renderTabs() {
+    tabsEl.innerHTML = "";
+    BILLS_DATA.categories.forEach(cat => {
+      const btn = document.createElement("button");
+      btn.className = "tab-btn" + (cat.key === state.activeCategory ? " active" : "");
+      btn.textContent = `${cat.name} (${cat.items.length})`;
+      btn.title = cat.fullName;
+      btn.addEventListener("click", () => {
+        state.activeCategory = cat.key;
+        state.status = "";
+        render();
+      });
+      tabsEl.appendChild(btn);
+    });
+  }
+
+  function renderStatusOptions(cat) {
+    const statuses = Array.from(new Set(cat.items.map(row => {
+      const idx = cat.columns.indexOf("審議状況");
+      return row[idx];
+    }).filter(Boolean)));
+
+    statusSelect.innerHTML = '<option value="">審議状況: すべて</option>';
+    statuses.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      statusSelect.appendChild(opt);
+    });
+    statusSelect.value = state.status;
+  }
+
+  function renderTable(cat) {
+    const titleIdx = cat.columns.indexOf("議案件名");
+    const statusIdx = cat.columns.indexOf("審議状況");
+    const progressIdx = cat.columns.indexOf("経過情報");
+    const textIdx = cat.columns.indexOf("本文情報");
+    const colCount = cat.columns.length + 1;
+
+    tableHead.innerHTML = "<tr><th class=\"col-toggle\"></th>" + cat.columns.map(c => `<th>${c}</th>`).join("") + "</tr>";
+
+    const q = state.query.trim().toLowerCase();
+    const filtered = cat.items.filter(row => {
+      const title = String(row[titleIdx] || "").toLowerCase();
+      const matchesQuery = !q || title.includes(q);
+      const matchesStatus = !state.status || row[statusIdx] === state.status;
+      return matchesQuery && matchesStatus;
+    });
+
+    tableBody.innerHTML = "";
+    filtered.forEach(row => {
+      const desc = row[cat.columns.length]; // {s, c, r} or undefined
+      const tr = document.createElement("tr");
+      tr.className = "bill-row" + (desc ? " has-desc" : "");
+      const cells = cat.columns.map((col, i) => {
+        const val = row[i];
+        if (i === titleIdx) {
+          return `<td class="col-title">${escapeHtml(val)}</td>`;
+        }
+        if (i === statusIdx) {
+          return `<td><span class="status-badge ${statusClass(val)}">${escapeHtml(val)}</span></td>`;
+        }
+        if (i === progressIdx || i === textIdx) {
+          if (!val) return `<td><span class="info-dash">—</span></td>`;
+          return `<td><a class="info-link" href="${BILLS_DATA.sourceUrl}" target="_blank" rel="noopener">${escapeHtml(val)}</a></td>`;
+        }
+        return `<td class="col-num">${val === undefined || val === "" ? "" : escapeHtml(String(val))}</td>`;
+      }).join("");
+      const toggleCell = `<td class="col-toggle">${desc ? '<span class="toggle-icon">▸</span>' : ''}</td>`;
+      tr.innerHTML = toggleCell + cells;
+
+      if (desc) {
+        const detailTr = document.createElement("tr");
+        detailTr.className = "detail-row";
+        detailTr.style.display = "none";
+        const detailTd = document.createElement("td");
+        detailTd.colSpan = colCount;
+        detailTd.innerHTML = `
+          <div class="desc-box">
+            <div class="desc-item"><span class="desc-label">何についての法案か</span><p>${escapeHtml(desc.s)}</p></div>
+            <div class="desc-item"><span class="desc-label">何を変えるか</span><p>${escapeHtml(desc.c)}</p></div>
+            <div class="desc-item"><span class="desc-label">提出理由</span><p>${escapeHtml(desc.r)}</p></div>
+          </div>`;
+        detailTr.appendChild(detailTd);
+        const descBox = detailTd.querySelector(".desc-box");
+
+        tr.addEventListener("click", () => {
+          const opening = !tr.classList.contains("expanded");
+          tr.classList.toggle("expanded");
+          detailTr.style.display = opening ? "table-row" : "none";
+          if (opening) {
+            detailTd.style.height = descBox.scrollHeight + "px";
+          }
+        });
+
+        tableBody.appendChild(tr);
+        tableBody.appendChild(detailTr);
+        return;
+      }
+      tableBody.appendChild(tr);
+    });
+
+    resultCount.textContent = `${cat.fullName}（${cat.name}） — ${filtered.length} / ${cat.items.length} 件`;
+    emptyState.style.display = filtered.length === 0 ? "block" : "none";
+    document.getElementById("billsTable").style.display = filtered.length === 0 ? "none" : "table";
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function render() {
+    const cat = getCategory(state.activeCategory);
+    renderTabs();
+    renderStatusOptions(cat);
+    renderTable(cat);
+    syncWrapWidth();
+  }
+
+  searchInput.addEventListener("input", (e) => {
+    state.query = e.target.value;
+    renderTable(getCategory(state.activeCategory));
+    syncWrapWidth();
+  });
+
+  statusSelect.addEventListener("change", (e) => {
+    state.status = e.target.value;
+    renderTable(getCategory(state.activeCategory));
+    syncWrapWidth();
+  });
+
+  renderSummary();
+  render();
+})();
+</script>
+
+</body>
+</html>

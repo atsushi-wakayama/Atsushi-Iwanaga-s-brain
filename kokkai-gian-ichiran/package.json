@@ -1,0 +1,10 @@
+{
+  "name": "kokkai-gian-ichiran",
+  "version": "1.0.0",
+  "description": "第221回国会 議案の一覧（衆議院サイトの議案情報をもとにした非公式まとめサイト）",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m http.server 3000",
+    "deploy": "vercel --prod"
+  }
+}

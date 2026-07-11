@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--prefix", "mirai-wakayama-gikai-admin"],
       "port": 3001
+    },
+    {
+      "name": "kokkai-gian-ichiran (static site)",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8743", "--directory", "kokkai-gian-ichiran"],
+      "port": 8743
     }
   ]
 }
