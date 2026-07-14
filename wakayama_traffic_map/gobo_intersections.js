@@ -28,9 +28,9 @@ window.OFFICIAL_HOTSPOTS = [
    years:{2023:{rank:8,count:5,jinshin:0}, 2025:{rank:2,count:6,jinshin:0}}},
   {name:"御坊駅前",     city:"御坊市", route:"県道御坊停車場線", station:"御坊", lat:33.906958, lon:135.159675, conf:"ok",
    years:{2021:{rank:1,count:11,jinshin:0}, 2022:{rank:2,count:8,jinshin:2}}},
-  {name:"市役所北",     city:"御坊市", route:"国道42号",        station:"御坊", lat:33.8924, lon:135.1528, conf:"ok",
+  {name:"市役所北",     city:"御坊市", route:"国道42号",        station:"御坊", lat:33.891548, lon:135.151706, conf:"ok",
    years:{2022:{rank:3,count:7,jinshin:0}}},
-  {name:"島南",        city:"御坊市", route:"県道御坊停車場線", station:"御坊", lat:33.8912, lon:135.1636, conf:"approx",
+  {name:"島南",        city:"御坊市", route:"県道御坊停車場線", station:"御坊", lat:33.894498, lon:135.162174, conf:"ok",
    years:{2023:{rank:6,count:6,jinshin:0}}},
   {name:"体育館前",     city:"御坊市", route:"国道42号",        station:"御坊", lat:33.893768, lon:135.151208, conf:"ok",
    years:{2024:{rank:3,count:6,jinshin:1}}},
@@ -41,10 +41,13 @@ window.OFFICIAL_HOTSPOTS = [
   {name:"天田橋北詰",   city:"御坊市", route:"国道42号",        station:"御坊", lat:33.881175, lon:135.157975, conf:"ok",
    years:{2025:{rank:3,count:5,jinshin:0}}},
   // --- 令和3年(2021)で新規に登場した交差点 ---
-  {name:"野口新橋西詰",  city:"御坊市", route:"県道御坊美山線",   station:"御坊", lat:33.9004, lon:135.1730, conf:"approx",
+  {name:"野口新橋西詰",  city:"御坊市", route:"県道御坊美山線",   station:"御坊", lat:33.901149, lon:135.171272, conf:"ok",
    years:{2021:{rank:3,count:6,jinshin:0}}},
-  {name:"新橋西方",     city:"御坊市", route:"市道",            station:"御坊", lat:33.9005, lon:135.1700, conf:"approx",
+  {name:"新橋西方",     city:"御坊市", route:"市道",            station:"御坊", lat:33.918354, lon:135.164617, conf:"ok",
    years:{2021:{rank:3,count:6,jinshin:0}}},
-  {name:"紀伊御坊駅北東方", city:"御坊市", route:"県道井関御坊線", station:"御坊", lat:33.8950, lon:135.1555, conf:"approx",
+  {name:"紀伊御坊駅北東方", city:"御坊市", route:"県道井関御坊線", station:"御坊", lat:33.894905, lon:135.155174, conf:"ok",
    years:{2021:{rank:9,count:5,jinshin:0}}},
+  // R5(2023)ランキングに掲載（当初抽出漏れ・現地特定で追加）
+  {name:"斎橋南",       city:"御坊市", route:"県道井関御坊線",   station:"御坊", lat:33.904872, lon:135.151902, conf:"ok",
+   years:{2023:{rank:8,count:5,jinshin:0}}},
 ];
