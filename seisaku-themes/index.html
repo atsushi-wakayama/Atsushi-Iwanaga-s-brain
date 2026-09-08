@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>政策のいま｜岩永淳志</title>
+<meta name="description" content="和歌山県議会議員・岩永淳志が地域の声から拾い上げた政策課題の一覧。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Shippori+Mincho:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0b0d;
+  --fg:#f2efe9;
+  --muted:#9b968d;
+  --line:rgba(255,255,255,.14);
+  --card-r:20px;
+  --ease:cubic-bezier(.22,.9,.24,1);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font-family:"Zen Kaku Gothic New",-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+  overflow:hidden;-webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+
+/* ---------- 無限グリッド ---------- */
+#stage{position:fixed;inset:0;overflow:hidden;cursor:grab;touch-action:none}
+#stage::before,#stage::after{content:"";position:absolute;left:0;right:0;height:190px;z-index:5;pointer-events:none}
+#stage::before{top:0;background:linear-gradient(to bottom,rgba(11,11,13,.92),rgba(11,11,13,0))}
+#stage::after{bottom:0;background:linear-gradient(to top,rgba(11,11,13,.92),rgba(11,11,13,0))}
+#stage.dragging{cursor:grabbing}
+#grid{position:absolute;inset:0;will-change:transform}
+
+.card{
+  position:absolute;top:0;left:0;
+  border-radius:var(--card-r);
+  overflow:hidden;
+  background:#1a1a1d;
+  box-shadow:0 18px 40px rgba(0,0,0,.45);
+  transition:opacity .45s var(--ease), filter .45s var(--ease);
+  will-change:transform;
+  user-select:none;-webkit-user-select:none;
+}
+.card__inner{
+  position:absolute;inset:0;
+  transition:transform .6s var(--ease);
+  transform:scale(1);
+}
+.card:hover .card__inner{transform:scale(1.06)}
+.card__bg{position:absolute;inset:0;background-size:cover;background-position:center}
+.card__glyph{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:"Shippori Mincho",serif;font-weight:800;
+  font-size:clamp(80px,14vw,190px);line-height:1;
+  color:rgba(255,255,255,.10);letter-spacing:-.04em;
+  text-shadow:0 0 40px rgba(0,0,0,.3);
+}
+.card__shade{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.85) 0%,rgba(0,0,0,.35) 45%,rgba(0,0,0,0) 75%)}
+.card__body{position:absolute;left:0;right:0;bottom:0;padding:18px 18px 16px}
+.card__sub{font-size:11px;letter-spacing:.14em;color:rgba(255,255,255,.62);margin:0 0 6px}
+.card__title{
+  font-family:"Shippori Mincho",serif;font-weight:800;
+  font-size:22px;line-height:1.28;margin:0 0 10px;letter-spacing:.02em;
+  text-shadow:0 2px 12px rgba(0,0,0,.6);
+}
+.tags{display:flex;flex-wrap:wrap;gap:5px}
+.tag{
+  font-size:10.5px;line-height:1;padding:5px 9px;border-radius:999px;
+  background:rgba(255,255,255,.13);color:rgba(255,255,255,.9);
+  backdrop-filter:blur(6px);white-space:nowrap;
+}
+.card__status{
+  position:absolute;top:12px;left:12px;font-size:10.5px;letter-spacing:.08em;
+  padding:5px 10px;border-radius:999px;background:rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(6px);
+}
+.card.is-dim{opacity:.14;filter:grayscale(1)}
+
+/* ---------- ヘッダ / UI ---------- */
+.ui{position:fixed;z-index:20;pointer-events:none}
+.ui > *{pointer-events:auto}
+#brand{top:0;left:0;padding:26px 30px}
+#brand .logo{
+  font-family:"Shippori Mincho",serif;font-weight:800;font-size:30px;letter-spacing:.06em;
+  margin:0;line-height:1.15;text-shadow:0 2px 20px rgba(0,0,0,.8)
+}
+#brand .logo small{display:block;font-family:inherit;font-size:13px;color:var(--muted);letter-spacing:.18em;margin-top:6px;font-weight:600}
+#brand .lead{max-width:330px;margin:16px 0 0;font-size:12.5px;line-height:1.85;color:rgba(255,255,255,.68)}
+
+#nav{top:0;right:0;padding:28px 30px;display:flex;gap:22px;font-size:12px;letter-spacing:.14em}
+#nav a{color:rgba(255,255,255,.78);text-decoration:none;transition:color .2s}
+#nav a:hover{color:#fff}
+
+#hint{
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:"Shippori Mincho",serif;font-size:26px;letter-spacing:.06em;
+  color:rgba(255,255,255,.85);text-align:center;line-height:1.35;
+  text-shadow:0 2px 24px rgba(0,0,0,.9);transition:opacity .6s var(--ease);
+  pointer-events:none!important;
+}
+#hint.hide{opacity:0}
+
+#dock{
+  left:50%;bottom:26px;transform:translateX(-50%);
+  display:flex;align-items:center;gap:12px;
+  background:rgba(24,24,27,.86);backdrop-filter:blur(14px);
+  border:1px solid var(--line);border-radius:999px;padding:10px 12px 10px 22px;
+  box-shadow:0 14px 40px rgba(0,0,0,.5);max-width:calc(100vw - 32px);
+}
+#dock .label{font-size:12.5px;color:rgba(255,255,255,.72);white-space:nowrap;margin-right:2px}
+.pill{
+  font-size:12.5px;padding:9px 16px;border-radius:999px;
+  background:rgba(255,255,255,.09);border:1px solid transparent;transition:all .2s;white-space:nowrap;
+}
+.pill:hover{background:rgba(255,255,255,.18)}
+.pill.on{background:#f2efe9;color:#111}
+#filters{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:1px}
+#filters::-webkit-scrollbar{display:none}
+
+#listbtn{left:0;bottom:26px;padding-left:30px;display:flex;align-items:center;gap:10px;font-size:12.5px;letter-spacing:.1em;color:rgba(255,255,255,.8)}
+#listbtn .bars{display:grid;gap:3px}
+#listbtn .bars i{display:block;width:16px;height:2px;background:currentColor}
+#foot{right:0;bottom:26px;padding-right:30px;font-size:11px;color:rgba(255,255,255,.4)}
+
+/* ---------- 詳細（サブページ） ---------- */
+#detail{
+  position:fixed;inset:0;z-index:40;visibility:hidden;
+}
+#detail.open{visibility:visible}
+#detail .veil{position:absolute;inset:0;background:var(--bg);opacity:0;transition:opacity .5s var(--ease)}
+#detail.open .veil{opacity:1}
+
+#hero{
+  position:absolute;border-radius:var(--card-r);overflow:hidden;
+  transition:transform .72s var(--ease), border-radius .72s var(--ease), width .72s var(--ease), height .72s var(--ease), top .72s var(--ease), left .72s var(--ease);
+}
+#hero .hbg{position:absolute;inset:0;background-size:cover;background-position:center}
+#hero .hshade{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.9),rgba(0,0,0,.25) 60%,rgba(0,0,0,.55))}
+#hero .hglyph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:"Shippori Mincho",serif;font-weight:800;font-size:clamp(120px,26vw,380px);color:rgba(255,255,255,.09);line-height:1}
+
+#detailScroll{
+  position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;
+  opacity:0;transition:opacity .45s var(--ease) .18s;
+}
+#detail.open #detailScroll{opacity:1}
+.dhead{min-height:56vh;display:flex;align-items:flex-end;padding:0 clamp(24px,7vw,110px) clamp(28px,5vh,54px);position:relative}
+.dhead .in{max-width:960px;transform:translateY(18px);opacity:0;transition:all .6s var(--ease) .22s}
+#detail.open .dhead .in{transform:none;opacity:1}
+.dhead h1{font-family:"Shippori Mincho",serif;font-weight:800;font-size:clamp(34px,6.4vw,74px);line-height:1.18;margin:12px 0 14px;letter-spacing:.02em}
+.dhead .sub{font-size:clamp(13px,1.6vw,17px);color:rgba(255,255,255,.75);letter-spacing:.1em;margin:0}
+.dhead .tags{margin-top:18px}
+
+.dbody{
+  background:var(--bg);padding:clamp(40px,7vw,90px) clamp(24px,7vw,110px) 140px;
+  position:relative;
+}
+.dbody .wrap{max-width:820px;margin:0 auto}
+.lede{font-size:clamp(17px,2.2vw,23px);line-height:1.95;margin:0 0 clamp(36px,6vw,60px);font-weight:500}
+.sec{margin:0 0 clamp(34px,5vw,52px);padding-top:26px;border-top:1px solid var(--line)}
+.sec h2{font-size:12px;letter-spacing:.22em;color:var(--muted);font-weight:700;margin:0 0 14px}
+.sec p{font-size:15.5px;line-height:2.05;margin:0;color:rgba(242,239,233,.92)}
+.sec ul{margin:0;padding-left:1.15em}
+.sec li{font-size:15px;line-height:2;margin-bottom:6px}
+.meta{display:flex;flex-wrap:wrap;gap:26px;padding-top:26px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.meta b{display:block;color:rgba(255,255,255,.55);font-size:10.5px;letter-spacing:.18em;font-weight:700;margin-bottom:7px}
+
+.related{margin-top:clamp(48px,8vw,80px)}
+.related h2{font-size:12px;letter-spacing:.22em;color:var(--muted);margin:0 0 18px}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.rcard{border-radius:14px;overflow:hidden;position:relative;height:130px;text-align:left;transition:transform .3s var(--ease)}
+.rcard:hover{transform:translateY(-4px)}
+.rcard span{position:absolute;left:14px;right:14px;bottom:12px;font-family:"Shippori Mincho",serif;font-weight:800;font-size:16px;line-height:1.3}
+.rcard i{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.8),rgba(0,0,0,.1))}
+
+#back{
+  position:fixed;top:22px;left:24px;z-index:60;display:flex;align-items:center;gap:10px;
+  background:rgba(24,24,27,.8);backdrop-filter:blur(12px);border:1px solid var(--line);
+  border-radius:999px;padding:11px 20px 11px 16px;font-size:12.5px;letter-spacing:.1em;
+  opacity:0;pointer-events:none;transition:opacity .4s var(--ease) .2s;
+}
+#detail.open #back{opacity:1;pointer-events:auto}
+#back:hover{background:rgba(255,255,255,.14)}
+
+/* ---------- 一覧 ---------- */
+#listview{position:fixed;inset:0;z-index:50;background:rgba(11,11,13,.97);backdrop-filter:blur(10px);overflow-y:auto;display:none;padding:96px clamp(24px,7vw,90px) 90px}
+#listview.open{display:block}
+#listview h2{font-family:"Shippori Mincho",serif;font-size:30px;margin:0 0 30px}
+.lrow{display:flex;gap:18px;align-items:baseline;padding:20px 4px;border-top:1px solid var(--line);width:100%;text-align:left;transition:padding-left .3s var(--ease)}
+.lrow:hover{padding-left:14px}
+.lrow .n{font-size:11px;color:var(--muted);width:34px;flex:none;letter-spacing:.1em}
+.lrow .t{font-family:"Shippori Mincho",serif;font-weight:800;font-size:20px;flex:none}
+.lrow .s{font-size:12.5px;color:var(--muted);line-height:1.7}
+#closeList{position:fixed;top:22px;right:24px;z-index:60;font-size:24px;line-height:1;padding:8px 14px;border-radius:999px;border:1px solid var(--line)}
+#listview:not(.open) ~ #closeList{display:none}
+
+@media (max-width:760px){
+  #brand{padding:18px 18px}
+  #brand .logo{font-size:23px}
+  #brand .lead{display:none}
+  #nav{display:none}
+  #listbtn{display:none}
+  #foot{display:none}
+  #dock{padding:9px 10px 9px 16px;gap:8px;bottom:18px}
+  #dock .label{display:none}
+  #hint{font-size:19px}
+  .lrow{flex-wrap:wrap;gap:8px}
+}
+</style>
+</head>
+<body>
+
+<div id="stage"><div id="grid"></div></div>
+
+<header class="ui" id="brand">
+  <h1 class="logo" id="siteName">政策のいま<small id="siteNameEn"></small></h1>
+  <p class="lead" id="siteLead"></p>
+</header>
+
+<nav class="ui" id="nav">
+  <a href="#/list">ALL LIST</a>
+  <a href="#/">HOME</a>
+</nav>
+
+<div class="ui" id="hint">Drag<br>to Discover</div>
+
+<button class="ui" id="listbtn"><span class="bars"><i></i><i></i><i></i></span>ALL LIST</button>
+
+<div class="ui" id="dock">
+  <span class="label">課題の絞り込み</span>
+  <div id="filters"></div>
+</div>
+
+<div class="ui" id="foot"></div>
+
+<!-- 詳細 -->
+<div id="detail" aria-hidden="true">
+  <div class="veil"></div>
+  <div id="hero"><div class="hbg"></div><div class="hglyph"></div><div class="hshade"></div></div>
+  <div id="detailScroll">
+    <div class="dhead">
+      <div class="in">
+        <p class="sub" id="dSub"></p>
+        <h1 id="dTitle"></h1>
+        <div class="tags" id="dTags"></div>
+      </div>
+    </div>
+    <div class="dbody"><div class="wrap" id="dWrap"></div></div>
+  </div>
+  <button id="back">← 一覧へもどる</button>
+</div>
+
+<!-- 一覧 -->
+<div id="listview"><h2>政策課題 一覧</h2><div id="listrows"></div></div>
+<button id="closeList" style="display:none">×</button>
+
+<script src="data.js"></script>
+<script>
+/* ============ 基本ユーティリティ ============ */
+const $ = (s,r=document)=>r.querySelector(s);
+const mod = (v,m)=>((v%m)+m)%m;
+const PALETTE = ["#2f6f6a","#3b5f9e","#8a4f2d","#5c6b2f","#9e3b3b","#324b7a","#4a6f8a","#a35f2b","#4f4f6b","#6b5340","#3f5c4f","#2f6b55"];
+const colorOf = t => t.color || PALETTE[Math.abs([...t.id].reduce((a,c)=>a+c.charCodeAt(0),0))%PALETTE.length];
+const glyphOf = t => (t.title||"").replace(/[\s・、。]/g,"").slice(0,2);
+const bgStyle = t => t.image
+  ? `background-image:linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.15)),url('${t.image}')`
+  : `background-image:radial-gradient(120% 100% at 30% 0%, ${colorOf(t)} 0%, ${shade(colorOf(t),-38)} 65%, #101012 100%)`;
+function shade(hex,p){const n=parseInt(hex.slice(1),16);const f=(s)=>Math.max(0,Math.min(255,Math.round(((n>>s)&255)*(1+p/100))));return `rgb(${f(16)},${f(8)},${f(0)})`;}
+
+$("#siteNameEn").textContent = SITE.nameEn;
+$("#siteName").firstChild.textContent = SITE.name;
+$("#siteLead").textContent = SITE.lead;
+$("#foot").textContent = SITE.footer;
+document.title = SITE.name + "｜" + SITE.owner;
+
+/* ============ 無限グリッド ============ */
+const stage = $("#stage"), grid = $("#grid");
+let CW, CH, cols, rows, gridW, gridH, tiles=[];
+let ox=0, oy=0, vx=0, vy=0, dragging=false, moved=0, lastX=0, lastY=0, lastT=0;
+let activeFilter = null;
+
+function buildGrid(){
+  grid.innerHTML=""; tiles=[];
+  const vw=innerWidth, vh=innerHeight;
+  const narrow = vw < 760;
+  CW = narrow ? Math.round(vw*0.62) : 340;
+  CH = Math.round(CW*1.30);
+  cols = Math.ceil(vw/CW)+2;
+  rows = Math.ceil(vh/CH)+2;
+  // テーマ数より多くのマスを作らない工夫（重複しすぎ防止）
+  gridW = cols*CW; gridH = rows*CH;
+  const n = THEMES.length;
+  // 隣り合うカードが同じテーマにならないよう、決め打ちの並べ替え順を使う
+  const ORDER = Array.from({length:n},(_,i)=>i)
+    .sort((a,b)=>((a*2654435761)%n) - ((b*2654435761)%n));
+  for(let c=0;c<cols;c++){
+    const colShift = (c%2? CH*0.42 : 0) + (c*37 % 90);
+    for(let r=0;r<rows;r++){
+      const t = THEMES[ORDER[mod(c*rows + r, n)]];
+      const el = document.createElement("div");
+      el.className="card"; el.dataset.id=t.id;
+      const gap = narrow?14:22;
+      const h = CH-gap-((c+r)%3===0?38:0);
+      el.style.width=(CW-gap)+"px"; el.style.height=h+"px";
+      el.innerHTML =
+        `<div class="card__inner"><div class="card__bg" style="${bgStyle(t)}"></div>`+
+        (t.image?"":`<div class="card__glyph">${glyphOf(t)}</div>`)+
+        `<div class="card__shade"></div></div>`+
+        (t.status?`<div class="card__status">${t.status}</div>`:"")+
+        `<div class="card__body">`+
+          (t.subtitle?`<p class="card__sub">${t.subtitle}</p>`:"")+
+          `<h3 class="card__title">${t.title}</h3>`+
+          `<div class="tags">${t.tags.slice(0,3).map(x=>`<span class="tag">${x}</span>`).join("")}</div>`+
+        `</div>`;
+      grid.appendChild(el);
+      tiles.push({el,bx:c*CW,by:r*CH+colShift,theme:t});
+    }
+  }
+  applyFilter();
+  render();
+}
+
+function render(){
+  for(const t of tiles){
+    const x = mod(t.bx+ox+CW, gridW)-CW;
+    const y = mod(t.by+oy+CH, gridH)-CH;
+    t.el.style.transform = `translate3d(${x}px,${y}px,0)`;
+  }
+}
+
+/* ドラッグ + 慣性 */
+function down(e){
+  dragging=true; moved=0; stage.classList.add("dragging");
+  lastX=e.clientX; lastY=e.clientY; lastT=performance.now(); vx=vy=0;
+  stage.setPointerCapture?.(e.pointerId);
+}
+function move(e){
+  if(!dragging) return;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY;
+  const now=performance.now(), dt=Math.max(1,now-lastT);
+  ox+=dx; oy+=dy; moved+=Math.abs(dx)+Math.abs(dy);
+  vx=dx/dt*16; vy=dy/dt*16;
+  lastX=e.clientX; lastY=e.clientY; lastT=now;
+  if(moved>30) $("#hint").classList.add("hide");
+  render();
+}
+function up(){ dragging=false; stage.classList.remove("dragging"); }
+stage.addEventListener("pointerdown",down);
+addEventListener("pointermove",move);
+addEventListener("pointerup",up);
+addEventListener("pointercancel",up);
+stage.addEventListener("wheel",e=>{
+  e.preventDefault(); ox-=e.deltaX; oy-=e.deltaY;
+  $("#hint").classList.add("hide"); render();
+},{passive:false});
+
+let auto = true;
+(function loop(){
+  if(!dragging){
+    if(Math.abs(vx)>0.05||Math.abs(vy)>0.05){
+      ox+=vx; oy+=vy; vx*=0.94; vy*=0.94; render();
+    }else if(auto && !$("#detail").classList.contains("open")){
+      ox-=0.18; oy-=0.10; render();
+    }
+  }
+  requestAnimationFrame(loop);
+})();
+
+/* クリック（ドラッグでない時だけ）*/
+stage.addEventListener("click",e=>{
+  if(moved>8) return;
+  const card = e.target.closest(".card");
+  if(!card || card.classList.contains("is-dim")) return;
+  location.hash = "#/t/"+card.dataset.id;
+});
+
+/* ============ 絞り込み ============ */
+const usedTags = [...new Set(THEMES.flatMap(t=>t.tags))];
+const filters = $("#filters");
+usedTags.forEach(tag=>{
+  const b=document.createElement("button");
+  b.className="pill"; b.textContent=tag;
+  b.onclick=()=>{ activeFilter = activeFilter===tag?null:tag; syncPills(); applyFilter(); };
+  filters.appendChild(b);
+});
+function syncPills(){ [...filters.children].forEach(b=>b.classList.toggle("on", b.textContent===activeFilter)); }
+function applyFilter(){
+  tiles.forEach(t=>t.el.classList.toggle("is-dim", !!activeFilter && !t.theme.tags.includes(activeFilter)));
+}
+
+/* ============ 詳細ページ ============ */
+const detail=$("#detail"), hero=$("#hero");
+let openedFrom=null, currentId=null;
+
+function openTheme(id, srcEl){
+  const t = THEMES.find(x=>x.id===id); if(!t) return;
+  currentId = id;
+  const r = srcEl ? srcEl.getBoundingClientRect()
+                  : {left:innerWidth/2-160,top:innerHeight/2-200,width:320,height:400};
+  openedFrom = srcEl || null;
+  hero.querySelector(".hbg").style.cssText = bgStyle(t);
+  hero.querySelector(".hglyph").textContent = t.image?"":glyphOf(t);
+  hero.style.transition="none";
+  hero.style.left=r.left+"px"; hero.style.top=r.top+"px";
+  hero.style.width=r.width+"px"; hero.style.height=r.height+"px";
+  hero.style.borderRadius="var(--card-r)";
+  hero.offsetHeight;
+  hero.style.transition="";
+
+  $("#dSub").textContent = t.subtitle || "";
+  $("#dTitle").textContent = t.title;
+  $("#dTags").innerHTML = t.tags.map(x=>`<span class="tag">${x}</span>`).join("");
+  const sec=(h,inner)=>inner?`<section class="sec"><h2>${h}</h2>${inner}</section>`:"";
+  const others = THEMES.filter(x=>x.id!==t.id && x.tags.some(g=>t.tags.includes(g))).slice(0,4);
+  $("#dWrap").innerHTML =
+    `<p class="lede">${t.summary||""}</p>`+
+    sec("課題の現状", t.issue?`<p>${t.issue}</p>`:"")+
+    sec("岩永の考え・提案", t.stance?`<p>${t.stance}</p>`:"")+
+    sec("これまでの動き", (t.actions&&t.actions.length)?`<ul>${t.actions.map(a=>`<li>${a}</li>`).join("")}</ul>`:"")+
+    `<div class="meta">`+
+      (t.status?`<div><b>ステータス</b>${t.status}</div>`:"")+
+      (t.source?`<div><b>声のもと</b>${t.source}</div>`:"")+
+      (t.updated?`<div><b>更新</b>${t.updated}</div>`:"")+
+    `</div>`+
+    (others.length?`<div class="related"><h2>関連する課題</h2><div class="rgrid">`+
+      others.map(o=>`<button class="rcard" data-go="${o.id}" style="${bgStyle(o)}"><i></i><span>${o.title}</span></button>`).join("")+
+      `</div></div>`:"");
+  $("#detailScroll").scrollTop=0;
+
+  detail.classList.add("open"); detail.setAttribute("aria-hidden","false");
+  document.documentElement.style.overflow="hidden";
+  requestAnimationFrame(()=>{
+    hero.style.left="0px"; hero.style.top="0px";
+    hero.style.width="100vw"; hero.style.height="62vh";
+    hero.style.borderRadius="0px";
+  });
+}
+
+function closeTheme(){
+  const r = openedFrom ? openedFrom.getBoundingClientRect() : null;
+  if(r){
+    hero.style.left=r.left+"px"; hero.style.top=r.top+"px";
+    hero.style.width=r.width+"px"; hero.style.height=r.height+"px";
+    hero.style.borderRadius="var(--card-r)";
+  }
+  detail.classList.remove("open"); detail.setAttribute("aria-hidden","true");
+  currentId=null;
+}
+$("#back").onclick = ()=>{ location.hash = "#/"; };
+addEventListener("keydown",e=>{ if(e.key==="Escape") location.hash="#/"; });
+$("#dWrap").addEventListener("click",e=>{
+  const b=e.target.closest("[data-go]"); if(!b) return;
+  location.hash="#/t/"+b.dataset.go;
+});
+
+/* ============ 一覧 ============ */
+const listview=$("#listview"), closeList=$("#closeList");
+$("#listrows").innerHTML = THEMES.map((t,i)=>
+  `<button class="lrow" data-go="${t.id}"><span class="n">${String(i+1).padStart(2,"0")}</span>`+
+  `<span class="t">${t.title}</span><span class="s">${t.summary||""}</span></button>`).join("");
+$("#listrows").addEventListener("click",e=>{
+  const b=e.target.closest("[data-go]"); if(!b) return;
+  location.hash="#/t/"+b.dataset.go;
+});
+$("#listbtn").onclick=()=>{location.hash="#/list";};
+closeList.onclick=()=>{location.hash="#/";};
+
+/* ============ ルーティング ============ */
+function route(){
+  const h=location.hash;
+  const m=h.match(/^#\/t\/(.+)$/);
+  if(m){
+    listview.classList.remove("open"); closeList.style.display="none";
+    if(currentId!==m[1]){
+      const src = [...document.querySelectorAll('.card[data-id="'+m[1]+'"]')]
+        .map(el=>({el,r:el.getBoundingClientRect()}))
+        .filter(o=>o.r.top<innerHeight&&o.r.bottom>0&&o.r.left<innerWidth&&o.r.right>0)[0];
+      openTheme(m[1], src && src.el);
+    }
+    return;
+  }
+  if(h==="#/list"){
+    if(currentId) closeTheme();
+    listview.classList.add("open"); closeList.style.display="block";
+    return;
+  }
+  listview.classList.remove("open"); closeList.style.display="none";
+  if(currentId) closeTheme();
+  document.documentElement.style.overflow="";
+}
+addEventListener("hashchange",route);
+
+/* ============ 初期化 ============ */
+buildGrid();
+route();
+let rt; addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>{const _ox=ox,_oy=oy;buildGrid();ox=_ox;oy=_oy;render();},200);});
+setTimeout(()=>$("#hint").classList.add("hide"), 6000);
+</script>
+</body>
+</html>
