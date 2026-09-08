@@ -42,7 +42,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   box-shadow:0 18px 40px rgba(0,0,0,.45);
   transition:opacity .45s var(--ease), filter .45s var(--ease);
   will-change:transform;
-  user-select:none;-webkit-user-select:none;
+  user-select:none;-webkit-user-select:none;cursor:pointer;
 }
 .card__inner{
   position:absolute;inset:0;
@@ -322,6 +322,7 @@ let CW, CH, cols, rows, gridW, gridH, tiles=[];
 let ox=0, oy=0, vx=0, vy=0, dragging=false, moved=0, lastX=0, lastY=0, lastT=0;
 let activeFilter = null;
 let peekId = null, peekEl = null;   // 概要ポップアップの状態（loop() より先に定義しておく）
+let downCard = null;                // pointerdown で押したカード
 
 function buildGrid(){
   grid.innerHTML=""; tiles=[];
@@ -376,7 +377,9 @@ function render(){
 function down(e){
   dragging=true; moved=0; stage.classList.add("dragging");
   lastX=e.clientX; lastY=e.clientY; lastT=performance.now(); vx=vy=0;
-  stage.setPointerCapture?.(e.pointerId);
+  // どのカードを押したかをここで確定させる（setPointerCapture は click の
+  // ターゲットを #stage に付け替えてしまうので使わない）
+  downCard = (e.target.closest && e.target.closest(".card")) || null;
 }
 function move(e){
   if(!dragging) return;
@@ -389,11 +392,17 @@ function move(e){
   if(moved>6) closePeek();
   render();
 }
-function up(){ dragging=false; stage.classList.remove("dragging"); }
+function up(){
+  if(!dragging) return;
+  dragging=false; stage.classList.remove("dragging");
+  if(moved<=8) tapCard(downCard);   // 動かしていなければ「クリック」とみなす
+  downCard=null;
+}
+function cancel(){ dragging=false; stage.classList.remove("dragging"); downCard=null; }
 stage.addEventListener("pointerdown",down);
 addEventListener("pointermove",move);
 addEventListener("pointerup",up);
-addEventListener("pointercancel",up);
+addEventListener("pointercancel",cancel);
 stage.addEventListener("wheel",e=>{
   e.preventDefault(); closePeek(); ox-=e.deltaX; oy-=e.deltaY;
   $("#hint").classList.add("hide"); render();
@@ -447,15 +456,14 @@ function closePeek(){
   tiles.forEach(o=>o.el.classList.remove("is-mute"));
 }
 
-stage.addEventListener("click",e=>{
-  if(moved>8) return;
-  const card = e.target.closest(".card");
+function tapCard(card){
   if(!card || card.classList.contains("is-dim")){ closePeek(); return; }
   if(peekId === card.dataset.id){            // 2回目 → 詳細へ
     closePeek(); location.hash = "#/t/"+card.dataset.id; return;
   }
   openPeek(card);                             // 1回目 → 概要
-});
+}
+// クリック判定は pointerup（up関数）だけで行う。click を併用すると二重発火する。
 peek.addEventListener("click",()=>{
   const id=peekId; closePeek(); if(id) location.hash="#/t/"+id;
 });
