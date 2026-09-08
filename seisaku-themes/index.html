@@ -82,6 +82,22 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.94);
   color:var(--green-d);font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.18);
 }
+/* 通し番号と「見た」バッジ */
+.card__no{
+  position:absolute;top:13px;right:15px;font-family:var(--serif);font-weight:700;
+  font-size:12px;letter-spacing:.1em;color:rgba(255,255,255,.8);
+  text-shadow:0 1px 6px rgba(0,0,0,.5);
+}
+.card__seen{
+  position:absolute;right:14px;bottom:14px;display:none;align-items:center;
+  font-size:10.5px;font-weight:700;letter-spacing:.06em;
+  padding:5px 11px;border-radius:999px;background:#fff;color:var(--green);
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.card.is-seen{opacity:.62}
+.card.is-seen:hover{opacity:1}
+.card.is-seen .card__seen{display:inline-flex}
+
 .card.is-dim{opacity:.2;filter:grayscale(1)}
 .card.is-mute{opacity:.3}
 .card.is-peek{box-shadow:0 0 0 3px var(--green), 0 22px 48px rgba(15,60,46,.28)}
@@ -121,7 +137,26 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   transition:opacity .6s var(--ease);pointer-events:none!important;
 }
 #hint::after{content:"";display:block;width:52px;height:2px;background:var(--band);margin:14px auto 0}
+#hint span{display:block;font-family:var(--sans);font-size:11px;letter-spacing:.2em;color:var(--muted);margin-top:8px;font-weight:500}
 #hint.hide{opacity:0}
+
+/* 進み具合（どれを見たか） */
+#seen{
+  top:0;right:0;padding:96px 34px 0;display:flex;align-items:center;gap:12px;
+  font-size:11.5px;letter-spacing:.08em;color:var(--green-d);font-weight:500;
+}
+#seenBar{width:96px;height:4px;border-radius:999px;background:var(--line);overflow:hidden}
+#seenBar i{display:block;height:100%;width:0;background:var(--round);transition:width .5s var(--ease)}
+#seenReset{display:none;font-size:10.5px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+#seenReset:hover{color:var(--green)}
+
+/* スクロール位置（どこを見ているか） */
+#scrollbar{
+  position:fixed;right:10px;top:150px;bottom:150px;width:4px;z-index:18;
+  border-radius:999px;background:var(--line);opacity:0;transition:opacity .35s var(--ease);pointer-events:none;
+}
+#scrollbar.on{opacity:1}
+#scrollbar i{position:absolute;left:0;width:100%;border-radius:999px;background:var(--green);opacity:.75}
 
 #dock{
   left:50%;bottom:28px;transform:translateX(-50%);
@@ -260,6 +295,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 .lrow .t{font-family:var(--serif);font-weight:700;font-size:20px;flex:none;color:var(--green-d)}
 .lrow:hover .t{text-decoration:underline;text-decoration-color:var(--green);text-underline-offset:6px;text-decoration-thickness:2px}
 .lrow .s{font-size:12.5px;color:var(--muted);line-height:1.8}
+.lrow.is-seen .n::after{content:"✓";color:var(--green);margin-left:4px}
+.lrow.is-seen .t{color:var(--muted)}
 #closeList{
   position:fixed;top:24px;right:26px;z-index:60;font-size:22px;line-height:1;
   width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--green-d);
@@ -277,6 +314,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   #dock{padding:8px 10px 8px 16px;gap:8px;bottom:18px}
   #dock .label{display:none}
   #hint{font-size:20px}
+  #seen{padding:64px 16px 0;gap:8px}
+  #seenBar{width:60px}
+  #scrollbar{top:96px;bottom:96px;right:6px}
   .lrow{flex-wrap:wrap;gap:8px}
 }
 </style>
@@ -297,7 +337,15 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   <a href="#/">HOME</a>
 </nav>
 
-<div class="ui" id="hint">Drag<br>to Discover</div>
+<div class="ui" id="hint">ドラッグして探す<br><span>Drag to Explore</span></div>
+
+<div class="ui" id="seen">
+  <span id="seenText">0 / 0 を見た</span>
+  <div id="seenBar"><i></i></div>
+  <button id="seenReset">リセット</button>
+</div>
+
+<div id="scrollbar"><i></i></div>
 
 <button class="ui" id="listbtn"><span class="bars"><i></i><i></i><i></i></span>ALL LIST</button>
 
@@ -351,72 +399,111 @@ $("#siteLead").textContent = SITE.lead;
 $("#foot").textContent = SITE.footer;
 document.title = SITE.name + "｜" + SITE.owner;
 
-/* ============ 無限グリッド ============ */
-/* ---- カードの大きさ（ここを変えれば全カードのサイズが変わる） ---- */
+/* ============ ボード（有限。全テーマが1回ずつ並ぶ） ============ */
+/* ---- カードの大きさ・並び（ここを変えれば全体が変わる） ---- */
 const CARD = {
-  width: 340,        // PCでのカード幅(px)
-  ratio: 1.04,       // 高さ = 幅 × この値（1.30 → 1.04 で縦を約80%に）
-  mobileWidth: 0.62, // スマホでは画面幅×この割合を1枚の幅にする
-  gap: 22,           // カード同士の間隔(px)
+  width: 340,      // PCでのカード幅(px)
+  ratio: 1.04,     // 高さ = 幅 × この値
+  gap: 22,         // カード同士の間隔(px)
+  cols: 4,         // PCでの列数
+  mobileCols: 2,   // スマホでの列数
 };
+/* 画面端の余白（ヘッダーや下部ドックにカードが隠れない距離） */
+const EDGE = { top:150, bottom:150, side:40, topSP:96, bottomSP:96, sideSP:16 };
 
 const stage = $("#stage"), grid = $("#grid");
-let CW, CH, cols, rows, gridW, gridH, tiles=[];
+let CW, CH, tiles=[], boardW=0, boardH=0;
 let ox=0, oy=0, vx=0, vy=0, dragging=false, moved=0, lastX=0, lastY=0, lastT=0;
+let minOX=0, maxOX=0, minOY=0, maxOY=0;
 let activeFilter = null;
 let peekId = null, peekEl = null;   // 概要ポップアップの状態（loop() より先に定義しておく）
 let downCard = null;                // pointerdown で押したカード
 
-function buildGrid(){
+/* ---- 見たテーマの記録（ブラウザに保存） ---- */
+const SEEN_KEY = "seisaku-seen-v1";
+let seen = new Set();
+try{ seen = new Set(JSON.parse(localStorage.getItem(SEEN_KEY)||"[]")); }catch(e){}
+function saveSeen(){ try{ localStorage.setItem(SEEN_KEY, JSON.stringify([...seen])); }catch(e){} }
+function markSeen(id){ if(!seen.has(id)){ seen.add(id); saveSeen(); } paintSeen(); }
+function paintSeen(){
+  tiles.forEach(t=>t.el.classList.toggle("is-seen", seen.has(t.theme.id)));
+  document.querySelectorAll(".lrow").forEach(r=>r.classList.toggle("is-seen", seen.has(r.dataset.go)));
+  const n=THEMES.length, k=THEMES.filter(t=>seen.has(t.id)).length;
+  $("#seenText").textContent = `${k} / ${n} を見た`;
+  $("#seenBar").firstElementChild.style.width = (n?k/n*100:0)+"%";
+  $("#seenReset").style.display = k? "inline" : "none";
+}
+
+const shownThemes = ()=> activeFilter ? THEMES.filter(t=>t.tags.includes(activeFilter)) : THEMES;
+
+function buildBoard(keepPos){
   grid.innerHTML=""; tiles=[];
-  const vw=innerWidth, vh=innerHeight;
-  const narrow = vw < 760;
-  CW = narrow ? Math.round(vw*CARD.mobileWidth) : CARD.width;
+  const vw=innerWidth, vh=innerHeight, narrow=vw<760;
+  const gap    = narrow?Math.round(CARD.gap*0.7):CARD.gap;
+  const mTop   = narrow?EDGE.topSP:EDGE.top;
+  const mBot   = narrow?EDGE.bottomSP:EDGE.bottom;
+  const mSide  = narrow?EDGE.sideSP:EDGE.side;
+  const list   = shownThemes();
+  const cols   = Math.max(1, Math.min(narrow?CARD.mobileCols:CARD.cols, list.length));
+
+  CW = narrow ? Math.round((vw - mSide*2 - gap*(cols-1))/cols) : CARD.width;
   CH = Math.round(CW*CARD.ratio);
-  cols = Math.ceil(vw/CW)+2;
-  rows = Math.ceil(vh/CH)+2;
-  // テーマ数より多くのマスを作らない工夫（重複しすぎ防止）
-  gridW = cols*CW; gridH = rows*CH;
-  const n = THEMES.length;
-  // 隣り合うカードが同じテーマにならないよう、決め打ちの並べ替え順を使う
-  const ORDER = Array.from({length:n},(_,i)=>i)
-    .sort((a,b)=>((a*2654435761)%n) - ((b*2654435761)%n));
-  for(let c=0;c<cols;c++){
-    const colShift = (c%2? CH*0.42 : 0) + (c*37 % 90);
-    for(let r=0;r<rows;r++){
-      const t = THEMES[ORDER[mod(c*rows + r, n)]];
-      const el = document.createElement("div");
-      el.className="card"; el.dataset.id=t.id;
-      const gap = narrow?Math.round(CARD.gap*0.65):CARD.gap;
-      const h = CH-gap-((c+r)%3===0?Math.round(CH*0.11):0);
-      el.style.width=(CW-gap)+"px"; el.style.height=h+"px";
-      el.innerHTML =
-        `<div class="card__inner"><div class="card__bg" style="${bgStyle(t)}"></div>`+
-        (t.image?"":`<div class="card__glyph">${glyphOf(t)}</div>`)+
-        `<div class="card__shade"></div></div>`+
-        (t.status?`<div class="card__status">${t.status}</div>`:"")+
-        `<div class="card__body">`+
-          (t.subtitle?`<p class="card__sub">${t.subtitle}</p>`:"")+
-          `<h3 class="card__title">${t.title}</h3>`+
-          `<div class="tags">${t.tags.slice(0,3).map(x=>`<span class="tag">${x}</span>`).join("")}</div>`+
-        `</div>`;
-      grid.appendChild(el);
-      tiles.push({el,bx:c*CW,by:r*CH+colShift,theme:t});
-    }
-  }
-  applyFilter();
+
+  list.forEach((t,i)=>{
+    const c=i%cols, r=(i/cols)|0;
+    const el=document.createElement("div");
+    el.className="card"; el.dataset.id=t.id;
+    el.style.width=CW+"px"; el.style.height=CH+"px";
+    el.innerHTML =
+      `<div class="card__inner"><div class="card__bg" style="${bgStyle(t)}"></div>`+
+      (t.image?"":`<div class="card__glyph">${glyphOf(t)}</div>`)+
+      `<div class="card__shade"></div></div>`+
+      (t.status?`<div class="card__status">${t.status}</div>`:"")+
+      `<span class="card__no">${String(i+1).padStart(2,"0")}</span>`+
+      `<span class="card__seen">✓ 見た</span>`+
+      `<div class="card__body">`+
+        (t.subtitle?`<p class="card__sub">${t.subtitle}</p>`:"")+
+        `<h3 class="card__title">${t.title}</h3>`+
+        `<div class="tags">${t.tags.slice(0,3).map(x=>`<span class="tag">${x}</span>`).join("")}</div>`+
+      `</div>`;
+    grid.appendChild(el);
+    tiles.push({el, bx:c*(CW+gap), by:r*(CH+gap), theme:t});
+  });
+
+  const rows = Math.ceil(list.length/cols) || 1;
+  boardW = cols*(CW+gap)-gap;
+  boardH = rows*(CH+gap)-gap;
+
+  // スクロールできる範囲を確定させる（この外には出ない＝無限ループしない）
+  if(boardW <= vw-mSide*2){ minOX = maxOX = Math.round((vw-boardW)/2); }
+  else { maxOX = mSide; minOX = vw - mSide - boardW; }
+  if(boardH <= vh-mTop-mBot){ minOY = maxOY = Math.round(mTop + (vh-mTop-mBot-boardH)/2); }
+  else { maxOY = mTop; minOY = vh - mBot - boardH; }
+
+  if(keepPos){ ox=clampX(ox); oy=clampY(oy); } else { ox=maxOX; oy=maxOY; }
+  paintSeen();
   render();
 }
 
+const clampX = v => Math.min(maxOX, Math.max(minOX, v));
+const clampY = v => Math.min(maxOY, Math.max(minOY, v));
+
 function render(){
-  for(const t of tiles){
-    const x = mod(t.bx+ox+CW, gridW)-CW;
-    const y = mod(t.by+oy+CH, gridH)-CH;
-    t.el.style.transform = `translate3d(${x}px,${y}px,0)`;
+  for(const t of tiles) t.el.style.transform = `translate3d(${t.bx+ox}px,${t.by+oy}px,0)`;
+  // 右端のスクロール位置インジケータ
+  const bar=$("#scrollbar"), th=bar.firstElementChild;
+  const range = maxOY-minOY;
+  if(range<=0){ bar.classList.remove("on"); }
+  else{
+    bar.classList.add("on");
+    const ratio = Math.min(1, innerHeight/(boardH+80));
+    const prog  = (maxOY-clampY(oy))/range;
+    th.style.height = Math.max(8, ratio*100)+"%";
+    th.style.top = (prog*(100-Math.max(8, ratio*100)))+"%";
   }
 }
 
-/* ドラッグ + 慣性 */
+/* ドラッグ + 慣性（範囲外はゴムのように戻る） */
 function down(e){
   dragging=true; moved=0; stage.classList.add("dragging");
   lastX=e.clientX; lastY=e.clientY; lastT=performance.now(); vx=vy=0;
@@ -429,6 +516,9 @@ function move(e){
   const dx=e.clientX-lastX, dy=e.clientY-lastY;
   const now=performance.now(), dt=Math.max(1,now-lastT);
   ox+=dx; oy+=dy; moved+=Math.abs(dx)+Math.abs(dy);
+  // 端を越えたぶんは抵抗をかけて引き戻す
+  ox = clampX(ox) + (ox-clampX(ox))*0.45;
+  oy = clampY(oy) + (oy-clampY(oy))*0.45;
   vx=dx/dt*16; vy=dy/dt*16;
   lastX=e.clientX; lastY=e.clientY; lastT=now;
   if(moved>30) $("#hint").classList.add("hide");
@@ -447,17 +537,22 @@ addEventListener("pointermove",move);
 addEventListener("pointerup",up);
 addEventListener("pointercancel",cancel);
 stage.addEventListener("wheel",e=>{
-  e.preventDefault(); closePeek(); ox-=e.deltaX; oy-=e.deltaY;
+  e.preventDefault(); closePeek();
+  ox=clampX(ox-e.deltaX); oy=clampY(oy-e.deltaY);
   $("#hint").classList.add("hide"); render();
 },{passive:false});
 
-let auto = true;
 (function loop(){
   if(!dragging){
-    if(Math.abs(vx)>0.05||Math.abs(vy)>0.05){
-      ox+=vx; oy+=vy; vx*=0.94; vy*=0.94; render();
-    }else if(auto && !peekId && !$("#detail").classList.contains("open")){
-      ox-=0.18; oy-=0.10; render();
+    const cx=clampX(ox), cy=clampY(oy);
+    if(Math.abs(cx-ox)>0.4 || Math.abs(cy-oy)>0.4){        // 範囲外 → 戻す
+      ox+=(cx-ox)*0.18; oy+=(cy-oy)*0.18; vx=vy=0; render();
+    }else if(Math.abs(vx)>0.05||Math.abs(vy)>0.05){         // 慣性
+      ox=cx; oy=cy;
+      ox+=vx; oy+=vy; vx*=0.92; vy*=0.92;
+      if(ox!==clampX(ox)){ ox=clampX(ox); vx=0; }
+      if(oy!==clampY(oy)){ oy=clampY(oy); vy=0; }
+      render();
     }
   }
   requestAnimationFrame(loop);
@@ -525,8 +620,8 @@ usedTags.forEach(tag=>{
 });
 function syncPills(){ [...filters.children].forEach(b=>b.classList.toggle("on", b.textContent===activeFilter)); }
 function applyFilter(){
-  if(typeof closePeek==="function") closePeek();
-  tiles.forEach(t=>t.el.classList.toggle("is-dim", !!activeFilter && !t.theme.tags.includes(activeFilter)));
+  closePeek();
+  buildBoard(false);   // 該当するテーマだけを並べ直す
 }
 
 /* ============ 詳細ページ ============ */
@@ -536,6 +631,7 @@ let openedFrom=null, currentId=null;
 function openTheme(id, srcEl){
   const t = THEMES.find(x=>x.id===id); if(!t) return;
   currentId = id;
+  markSeen(id);
   const r = srcEl ? srcEl.getBoundingClientRect()
                   : {left:innerWidth/2-160,top:innerHeight/2-200,width:320,height:400};
   openedFrom = srcEl || null;
@@ -637,12 +733,16 @@ function route(){
 addEventListener("hashchange",route);
 
 /* ============ 初期化 ============ */
-buildGrid();
+$("#seenReset").onclick = (e)=>{
+  e.stopPropagation();
+  seen.clear(); saveSeen(); paintSeen();
+};
+buildBoard(false);
 route();
 let rt; addEventListener("resize",()=>{
   if(currentId){ hero.style.width=innerWidth+"px"; hero.style.height=Math.round(innerHeight*0.62)+"px"; }
   clearTimeout(rt);
-  rt=setTimeout(()=>{const _ox=ox,_oy=oy;buildGrid();ox=_ox;oy=_oy;render();},200);
+  rt=setTimeout(()=>buildBoard(true),200);
 });
 setTimeout(()=>$("#hint").classList.add("hide"), 6000);
 </script>
