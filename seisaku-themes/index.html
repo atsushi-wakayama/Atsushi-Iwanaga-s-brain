@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>政策のいま｜岩永淳志</title>
-<meta name="description" content="和歌山県議会議員・岩永淳志が地域の声から拾い上げた政策課題の一覧。">
+<!--HEAD-->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@600;700;900&display=swap" rel="stylesheet">
@@ -36,6 +35,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 
 /* ページ最上部のグラデーションの帯 */
 #topband{position:fixed;top:0;left:0;right:0;height:5px;background:var(--band);z-index:70}
+
+/* ---------- JavaScript が動かない環境向けの本文（JSが動けば即座に消える） ---------- */
+#prerender{max-width:820px;margin:0 auto;padding:40px 24px 80px;font-family:var(--sans);color:var(--ink)}
+#prerender h1{font-family:var(--serif);font-size:32px;color:var(--green-d);margin:0 0 8px}
+#prerender h2{font-family:var(--serif);font-size:20px;color:var(--green-d);margin:32px 0 8px}
+#prerender h3{font-size:12px;letter-spacing:.2em;color:var(--green);margin:28px 0 10px}
+#prerender p,#prerender li{line-height:2;font-size:15px}
+#prerender a{color:var(--green)}
 
 /* ---------- 無限グリッド ---------- */
 #stage{
@@ -339,6 +346,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 </head>
 <body>
 
+<div id="prerender"><!--PRERENDER--></div>
+<script>var _p=document.getElementById("prerender");if(_p)_p.remove();</script>
+
 <div id="topband"></div>
 
 <div id="stage"><div id="grid"></div></div>
@@ -349,8 +359,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 </header>
 
 <nav class="ui" id="nav">
-  <a href="#/list">ALL LIST</a>
-  <a href="#/">HOME</a>
+  <a href="/list" data-nav>ALL LIST</a>
+  <a href="/" data-nav>HOME</a>
 </nav>
 
 <div class="ui" id="hint">スクロールして探す<br><span>Scroll to Explore</span></div>
@@ -397,7 +407,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 <div id="listview"><h2>政策課題 一覧</h2><p class="lsub">ALL POLICY ISSUES</p><div id="listrows"></div></div>
 <button id="closeList" style="display:none">×</button>
 
-<script src="data.js"></script>
+<script src="/data.js"></script>
 <script>
 /* ============ 基本ユーティリティ ============ */
 const $ = (s,r=document)=>r.querySelector(s);
@@ -405,8 +415,9 @@ const mod = (v,m)=>((v%m)+m)%m;
 const PALETTE = ["#2f6f6a","#3b5f9e","#8a4f2d","#5c6b2f","#9e3b3b","#324b7a","#4a6f8a","#a35f2b","#4f4f6b","#6b5340","#3f5c4f","#2f6b55"];
 const colorOf = t => t.color || PALETTE[Math.abs([...t.id].reduce((a,c)=>a+c.charCodeAt(0),0))%PALETTE.length];
 const glyphOf = t => (t.title||"").replace(/[\s・、。]/g,"").slice(0,2);
+const imgURL = u => /^(https?:|\/)/.test(u) ? u : "/"+u;
 const bgStyle = t => t.image
-  ? `background-image:linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.15)),url('${t.image}')`
+  ? `background-image:linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.15)),url('${imgURL(t.image)}')`
   : `background-image:radial-gradient(120% 100% at 30% 0%, ${colorOf(t)} 0%, ${shade(colorOf(t),-38)} 65%, #101012 100%)`;
 function shade(hex,p){const n=parseInt(hex.slice(1),16);const f=(s)=>Math.max(0,Math.min(255,Math.round(((n>>s)&255)*(1+p/100))));return `rgb(${f(16)},${f(8)},${f(0)})`;}
 
@@ -414,7 +425,8 @@ $("#siteNameEn").textContent = SITE.nameEn;
 $("#siteName").firstChild.textContent = SITE.name;
 $("#siteLead").textContent = SITE.lead;
 $("#foot").textContent = SITE.footer;
-document.title = SITE.name + "｜" + SITE.owner;
+const BASE_TITLE = SITE.name + "｜" + SITE.owner;
+const setTitle = t => document.title = t ? `${t.title}｜${SITE.name}` : BASE_TITLE;
 
 /* ============ ボード（有限。全テーマが1回ずつ並ぶ） ============ */
 /* ---- カードの大きさ・並び（ここを変えれば全体が変わる） ---- */
@@ -589,13 +601,13 @@ function closePeek(){
 function tapCard(card){
   if(!card || card.classList.contains("is-dim")){ closePeek(); return; }
   if(peekId === card.dataset.id){            // 2回目 → 詳細へ
-    closePeek(); location.hash = "#/t/"+card.dataset.id; return;
+    closePeek(); go("/t/"+card.dataset.id); return;
   }
   openPeek(card);                             // 1回目 → 概要
 }
 // クリック判定は pointerup（up関数）だけで行う。click を併用すると二重発火する。
 peek.addEventListener("click",()=>{
-  const id=peekId; closePeek(); if(id) location.hash="#/t/"+id;
+  const id=peekId; closePeek(); if(id) go("/t/"+id);
 });
 
 /* ============ 絞り込み ============ */
@@ -655,12 +667,18 @@ function openTheme(id, srcEl){
 
   detail.classList.add("open"); detail.setAttribute("aria-hidden","false");
   document.documentElement.style.overflow="hidden";
-  requestAnimationFrame(()=>{
+  // 拡大先をセット。requestAnimationFrame はタブが非表示だと発火しないので
+  // タイマーでも同じ処理を流す（直リンクで開いたときの取りこぼし防止）
+  const expand = ()=>{
+    const W = innerWidth || document.documentElement.clientWidth || stage.clientWidth;
+    const H = innerHeight || document.documentElement.clientHeight || stage.clientHeight;
+    if(!W || !H) return;
     hero.style.left="0px"; hero.style.top="0px";
-    hero.style.width=innerWidth+"px";
-    hero.style.height=Math.round(innerHeight*0.62)+"px";
+    hero.style.width=W+"px";
+    hero.style.height=Math.round(H*0.62)+"px";
     hero.style.borderRadius="0px";
-  });
+  };
+  requestAnimationFrame(expand); setTimeout(expand,80);
 }
 
 function closeTheme(){
@@ -673,15 +691,15 @@ function closeTheme(){
   detail.classList.remove("open"); detail.setAttribute("aria-hidden","true");
   currentId=null;
 }
-$("#back").onclick = ()=>{ location.hash = "#/"; };
+$("#back").onclick = ()=>go("/");
 addEventListener("keydown",e=>{
   if(e.key!=="Escape") return;
   if(peekId){ closePeek(); return; }
-  location.hash="#/";
+  go("/");
 });
 $("#dWrap").addEventListener("click",e=>{
   const b=e.target.closest("[data-go]"); if(!b) return;
-  location.hash="#/t/"+b.dataset.go;
+  go("/t/"+b.dataset.go);
 });
 
 /* ============ 一覧 ============ */
@@ -691,17 +709,27 @@ $("#listrows").innerHTML = THEMES.map((t,i)=>
   `<span class="t">${t.title}</span><span class="s">${t.summary||""}</span></button>`).join("");
 $("#listrows").addEventListener("click",e=>{
   const b=e.target.closest("[data-go]"); if(!b) return;
-  location.hash="#/t/"+b.dataset.go;
+  go("/t/"+b.dataset.go);
 });
-$("#listbtn").onclick=()=>{location.hash="#/list";};
-closeList.onclick=()=>{location.hash="#/";};
+$("#listbtn").onclick=()=>go("/list");
+closeList.onclick=()=>go("/");
 
-/* ============ ルーティング ============ */
+/* ============ ルーティング（実URL。#は使わない＝SSGしたページに直接飛べる） ============ */
+function go(path){
+  if(location.pathname!==path) history.pushState({},"",path);
+  route();
+}
+document.addEventListener("click",e=>{
+  const a=e.target.closest("a[data-nav]"); if(!a) return;
+  e.preventDefault(); go(a.getAttribute("href"));
+});
 function route(){
-  const h=location.hash;
-  const m=h.match(/^#\/t\/(.+)$/);
+  const h=decodeURIComponent(location.pathname);
+  const m=h.match(/^\/t\/([^\/]+?)(?:\.html)?\/?$/);   // .html付きでも開けるように
   if(m){
     listview.classList.remove("open"); closeList.style.display="none";
+    const th = THEMES.find(x=>x.id===m[1]);
+    setTitle(th);
     if(currentId!==m[1]){
       const src = [...document.querySelectorAll('.card[data-id="'+m[1]+'"]')]
         .map(el=>({el,r:el.getBoundingClientRect()}))
@@ -710,16 +738,18 @@ function route(){
     }
     return;
   }
-  if(h==="#/list"){
+  if(h==="/list"||h==="/list/"||h==="/list.html"){
+    setTitle(null);
     if(currentId) closeTheme();
     listview.classList.add("open"); closeList.style.display="block";
     return;
   }
   listview.classList.remove("open"); closeList.style.display="none";
+  setTitle(null);
   if(currentId) closeTheme();
   document.documentElement.style.overflow="";
 }
-addEventListener("hashchange",route);
+addEventListener("popstate",route);
 
 /* ============ 初期化 ============ */
 $("#seenReset").onclick = (e)=>{
@@ -729,7 +759,10 @@ $("#seenReset").onclick = (e)=>{
 buildBoard(false);
 route();
 let rt; addEventListener("resize",()=>{
-  if(currentId){ hero.style.width=innerWidth+"px"; hero.style.height=Math.round(innerHeight*0.62)+"px"; }
+  if(currentId){
+    const W=innerWidth||document.documentElement.clientWidth, H=innerHeight||document.documentElement.clientHeight;
+    if(W&&H){ hero.style.width=W+"px"; hero.style.height=Math.round(H*0.62)+"px"; }
+  }
   clearTimeout(rt);
   rt=setTimeout(()=>buildBoard(true),200);
 });

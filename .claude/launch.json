@@ -4,7 +4,7 @@
     {
       "name": "seisaku-themes",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "4321", "--directory", "seisaku-themes"],
+      "runtimeArgs": ["-m", "http.server", "4321", "--directory", "seisaku-themes/dist"],
       "port": 4321
     }
   ]
