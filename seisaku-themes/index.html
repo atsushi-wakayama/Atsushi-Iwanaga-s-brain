@@ -78,6 +78,36 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(6px);
 }
 .card.is-dim{opacity:.14;filter:grayscale(1)}
+.card.is-mute{opacity:.28}
+.card.is-peek{box-shadow:0 0 0 2px rgba(242,239,233,.92), 0 26px 60px rgba(0,0,0,.6)}
+.card.is-peek .card__inner{transform:scale(1.06)}
+
+/* ---------- クリック1回目：概要ポップアップ ---------- */
+#peek{
+  position:fixed;z-index:30;width:320px;max-width:calc(100vw - 32px);
+  background:rgba(19,19,22,.93);backdrop-filter:blur(20px);
+  border:1px solid var(--line);border-radius:18px;padding:22px 22px 18px;
+  box-shadow:0 26px 70px rgba(0,0,0,.65);
+  opacity:0;transform:translateY(10px) scale(.97);pointer-events:none;
+  transition:opacity .28s var(--ease), transform .28s var(--ease);
+  cursor:pointer;
+}
+#peek.on{opacity:1;transform:none;pointer-events:auto}
+#peek .psub{font-size:11px;letter-spacing:.14em;color:var(--muted);margin:0 0 7px}
+#peek .ptitle{font-family:"Shippori Mincho",serif;font-weight:800;font-size:22px;line-height:1.3;margin:0 0 12px}
+#peek .ptext{font-size:13px;line-height:1.95;color:rgba(242,239,233,.85);margin:0 0 14px}
+#peek .tags{margin-bottom:16px}
+#peek .pmore{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  border-top:1px solid var(--line);padding-top:13px;
+  font-size:11.5px;letter-spacing:.1em;color:rgba(255,255,255,.9);
+}
+#peek .pmore em{font-style:normal;color:var(--muted);font-size:10.5px;letter-spacing:.06em}
+#peek .parrow{transition:transform .3s var(--ease)}
+#peek:hover .parrow{transform:translateX(5px)}
+@media (max-width:760px){
+  #peek{left:16px!important;right:16px!important;width:auto;bottom:86px!important;top:auto!important}
+}
 
 /* ---------- ヘッダ / UI ---------- */
 .ui{position:fixed;z-index:20;pointer-events:none}
@@ -235,6 +265,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 <div class="ui" id="foot"></div>
 
+<!-- クリック1回目に出る概要ポップアップ -->
+<div id="peek"></div>
+
 <!-- 詳細 -->
 <div id="detail" aria-hidden="true">
   <div class="veil"></div>
@@ -276,17 +309,26 @@ $("#foot").textContent = SITE.footer;
 document.title = SITE.name + "｜" + SITE.owner;
 
 /* ============ 無限グリッド ============ */
+/* ---- カードの大きさ（ここを変えれば全カードのサイズが変わる） ---- */
+const CARD = {
+  width: 340,        // PCでのカード幅(px)
+  ratio: 1.04,       // 高さ = 幅 × この値（1.30 → 1.04 で縦を約80%に）
+  mobileWidth: 0.62, // スマホでは画面幅×この割合を1枚の幅にする
+  gap: 22,           // カード同士の間隔(px)
+};
+
 const stage = $("#stage"), grid = $("#grid");
 let CW, CH, cols, rows, gridW, gridH, tiles=[];
 let ox=0, oy=0, vx=0, vy=0, dragging=false, moved=0, lastX=0, lastY=0, lastT=0;
 let activeFilter = null;
+let peekId = null, peekEl = null;   // 概要ポップアップの状態（loop() より先に定義しておく）
 
 function buildGrid(){
   grid.innerHTML=""; tiles=[];
   const vw=innerWidth, vh=innerHeight;
   const narrow = vw < 760;
-  CW = narrow ? Math.round(vw*0.62) : 340;
-  CH = Math.round(CW*1.30);
+  CW = narrow ? Math.round(vw*CARD.mobileWidth) : CARD.width;
+  CH = Math.round(CW*CARD.ratio);
   cols = Math.ceil(vw/CW)+2;
   rows = Math.ceil(vh/CH)+2;
   // テーマ数より多くのマスを作らない工夫（重複しすぎ防止）
@@ -301,8 +343,8 @@ function buildGrid(){
       const t = THEMES[ORDER[mod(c*rows + r, n)]];
       const el = document.createElement("div");
       el.className="card"; el.dataset.id=t.id;
-      const gap = narrow?14:22;
-      const h = CH-gap-((c+r)%3===0?38:0);
+      const gap = narrow?Math.round(CARD.gap*0.65):CARD.gap;
+      const h = CH-gap-((c+r)%3===0?Math.round(CH*0.11):0);
       el.style.width=(CW-gap)+"px"; el.style.height=h+"px";
       el.innerHTML =
         `<div class="card__inner"><div class="card__bg" style="${bgStyle(t)}"></div>`+
@@ -344,6 +386,7 @@ function move(e){
   vx=dx/dt*16; vy=dy/dt*16;
   lastX=e.clientX; lastY=e.clientY; lastT=now;
   if(moved>30) $("#hint").classList.add("hide");
+  if(moved>6) closePeek();
   render();
 }
 function up(){ dragging=false; stage.classList.remove("dragging"); }
@@ -352,7 +395,7 @@ addEventListener("pointermove",move);
 addEventListener("pointerup",up);
 addEventListener("pointercancel",up);
 stage.addEventListener("wheel",e=>{
-  e.preventDefault(); ox-=e.deltaX; oy-=e.deltaY;
+  e.preventDefault(); closePeek(); ox-=e.deltaX; oy-=e.deltaY;
   $("#hint").classList.add("hide"); render();
 },{passive:false});
 
@@ -361,19 +404,60 @@ let auto = true;
   if(!dragging){
     if(Math.abs(vx)>0.05||Math.abs(vy)>0.05){
       ox+=vx; oy+=vy; vx*=0.94; vy*=0.94; render();
-    }else if(auto && !$("#detail").classList.contains("open")){
+    }else if(auto && !peekId && !$("#detail").classList.contains("open")){
       ox-=0.18; oy-=0.10; render();
     }
   }
   requestAnimationFrame(loop);
 })();
 
-/* クリック（ドラッグでない時だけ）*/
+/* ============ クリック1回目＝概要ポップアップ / 2回目＝詳細ページ ============ */
+const peek = $("#peek");
+
+function openPeek(card){
+  const t = THEMES.find(x=>x.id===card.dataset.id); if(!t) return;
+  if(peekEl) peekEl.classList.remove("is-peek");
+  peekId=t.id; peekEl=card;
+  peek.innerHTML =
+    (t.subtitle?`<p class="psub">${t.subtitle}</p>`:"")+
+    `<h3 class="ptitle">${t.title}</h3>`+
+    `<p class="ptext">${t.summary||""}</p>`+
+    `<div class="tags">${t.tags.map(x=>`<span class="tag">${x}</span>`).join("")}</div>`+
+    `<div class="pmore"><span>もう一度クリックで詳しく</span>`+
+    (t.status?`<em>${t.status}</em>`:"")+`<span class="parrow">→</span></div>`;
+  peek.classList.add("on");
+  positionPeek(card);
+  tiles.forEach(o=>o.el.classList.toggle("is-mute", o.el!==card));
+  card.classList.add("is-peek");
+}
+function positionPeek(card){
+  const r=card.getBoundingClientRect(), m=16;
+  const pw=peek.offsetWidth, ph=peek.offsetHeight;
+  let left = r.right + 14;
+  if(left + pw > innerWidth - m) left = r.left - pw - 14;
+  if(left < m) left = Math.min(Math.max(m, r.left+(r.width-pw)/2), innerWidth-pw-m);
+  let top = Math.max(m, Math.min(r.top + r.height/2 - ph/2, innerHeight-ph-m));
+  peek.style.left=left+"px"; peek.style.top=top+"px";
+}
+function closePeek(){
+  if(!peekId) return;
+  peek.classList.remove("on"); peekId=null;
+  if(peekEl) peekEl.classList.remove("is-peek");
+  peekEl=null;
+  tiles.forEach(o=>o.el.classList.remove("is-mute"));
+}
+
 stage.addEventListener("click",e=>{
   if(moved>8) return;
   const card = e.target.closest(".card");
-  if(!card || card.classList.contains("is-dim")) return;
-  location.hash = "#/t/"+card.dataset.id;
+  if(!card || card.classList.contains("is-dim")){ closePeek(); return; }
+  if(peekId === card.dataset.id){            // 2回目 → 詳細へ
+    closePeek(); location.hash = "#/t/"+card.dataset.id; return;
+  }
+  openPeek(card);                             // 1回目 → 概要
+});
+peek.addEventListener("click",()=>{
+  const id=peekId; closePeek(); if(id) location.hash="#/t/"+id;
 });
 
 /* ============ 絞り込み ============ */
@@ -387,6 +471,7 @@ usedTags.forEach(tag=>{
 });
 function syncPills(){ [...filters.children].forEach(b=>b.classList.toggle("on", b.textContent===activeFilter)); }
 function applyFilter(){
+  if(typeof closePeek==="function") closePeek();
   tiles.forEach(t=>t.el.classList.toggle("is-dim", !!activeFilter && !t.theme.tags.includes(activeFilter)));
 }
 
@@ -433,7 +518,8 @@ function openTheme(id, srcEl){
   document.documentElement.style.overflow="hidden";
   requestAnimationFrame(()=>{
     hero.style.left="0px"; hero.style.top="0px";
-    hero.style.width="100vw"; hero.style.height="62vh";
+    hero.style.width=innerWidth+"px";
+    hero.style.height=Math.round(innerHeight*0.62)+"px";
     hero.style.borderRadius="0px";
   });
 }
@@ -449,7 +535,11 @@ function closeTheme(){
   currentId=null;
 }
 $("#back").onclick = ()=>{ location.hash = "#/"; };
-addEventListener("keydown",e=>{ if(e.key==="Escape") location.hash="#/"; });
+addEventListener("keydown",e=>{
+  if(e.key!=="Escape") return;
+  if(peekId){ closePeek(); return; }
+  location.hash="#/";
+});
 $("#dWrap").addEventListener("click",e=>{
   const b=e.target.closest("[data-go]"); if(!b) return;
   location.hash="#/t/"+b.dataset.go;
@@ -495,7 +585,11 @@ addEventListener("hashchange",route);
 /* ============ 初期化 ============ */
 buildGrid();
 route();
-let rt; addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>{const _ox=ox,_oy=oy;buildGrid();ox=_ox;oy=_oy;render();},200);});
+let rt; addEventListener("resize",()=>{
+  if(currentId){ hero.style.width=innerWidth+"px"; hero.style.height=Math.round(innerHeight*0.62)+"px"; }
+  clearTimeout(rt);
+  rt=setTimeout(()=>{const _ox=ox,_oy=oy;buildGrid();ox=_ox;oy=_oy;render();},200);
+});
 setTimeout(()=>$("#hint").classList.add("hide"), 6000);
 </script>
 </body>
