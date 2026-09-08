@@ -38,16 +38,21 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 #topband{position:fixed;top:0;left:0;right:0;height:5px;background:var(--band);z-index:70}
 
 /* ---------- 無限グリッド ---------- */
-#stage{position:fixed;inset:0;overflow:hidden;cursor:grab;touch-action:none;background:var(--bg)}
+#stage{
+  position:fixed;inset:0;overflow:auto;background:var(--bg);cursor:grab;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+}
+#stage::-webkit-scrollbar{width:0;height:0}
+#stage{scrollbar-width:none}
 #stage.dragging{cursor:grabbing}
-#stage::before,#stage::after{content:"";position:absolute;left:0;right:0;height:150px;z-index:5;pointer-events:none}
+#grid{position:relative;width:100%;height:100%}
+#stage::before,#stage::after{content:"";position:fixed;left:0;right:0;height:150px;z-index:5;pointer-events:none}
 #stage::before{top:0;background:linear-gradient(to bottom,#fff 14%,rgba(255,255,255,.8) 48%,rgba(255,255,255,0))}
 #stage::after{bottom:0;background:linear-gradient(to top,#fff 12%,rgba(255,255,255,.8) 48%,rgba(255,255,255,0))}
-#grid{position:absolute;inset:0;will-change:transform}
 
 /* カードの色分けは従来どおり（テーマごとの色を維持） */
 .card{
-  position:absolute;top:0;left:0;
+  position:absolute;top:0;left:0;will-change:transform;
   border-radius:var(--card-r);overflow:hidden;background:#f1f4f2;
   box-shadow:0 14px 34px rgba(15,60,46,.16), 0 2px 6px rgba(15,60,46,.08);
   transition:opacity .45s var(--ease), filter .45s var(--ease), box-shadow .35s var(--ease);
@@ -89,7 +94,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   text-shadow:0 1px 6px rgba(0,0,0,.5);
 }
 .card__seen{
-  position:absolute;right:14px;bottom:14px;display:none;align-items:center;
+  position:absolute;right:14px;top:38px;display:none;align-items:center;
   font-size:10.5px;font-weight:700;letter-spacing:.06em;
   padding:5px 11px;border-radius:999px;background:#fff;color:var(--green);
   box-shadow:0 2px 8px rgba(0,0,0,.2);
@@ -157,6 +162,16 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 }
 #scrollbar.on{opacity:1}
 #scrollbar i{position:absolute;left:0;width:100%;border-radius:999px;background:var(--green);opacity:.75}
+
+/* 上へ戻る（アプリ内ブラウザで下方向スワイプが効かない環境の保険） */
+#toTop{
+  position:fixed;right:22px;bottom:100px;z-index:25;
+  width:48px;height:48px;border-radius:50%;background:var(--round);color:#fff;font-size:17px;
+  box-shadow:0 10px 24px rgba(20,98,74,.35);
+  opacity:0;pointer-events:none;transform:translateY(8px);
+  transition:opacity .3s var(--ease), transform .3s var(--ease);
+}
+#toTop.on{opacity:1;pointer-events:auto;transform:none}
 
 #dock{
   left:50%;bottom:28px;transform:translateX(-50%);
@@ -317,6 +332,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   #seen{padding:64px 16px 0;gap:8px}
   #seenBar{width:60px}
   #scrollbar{top:96px;bottom:96px;right:6px}
+  #toTop{right:16px;bottom:86px;width:44px;height:44px}
   .lrow{flex-wrap:wrap;gap:8px}
 }
 </style>
@@ -337,7 +353,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   <a href="#/">HOME</a>
 </nav>
 
-<div class="ui" id="hint">ドラッグして探す<br><span>Drag to Explore</span></div>
+<div class="ui" id="hint">スクロールして探す<br><span>Scroll to Explore</span></div>
 
 <div class="ui" id="seen">
   <span id="seenText">0 / 0 を見た</span>
@@ -346,6 +362,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 </div>
 
 <div id="scrollbar"><i></i></div>
+<button id="toTop" aria-label="上へ戻る">↑</button>
 
 <button class="ui" id="listbtn"><span class="bars"><i></i><i></i><i></i></span>ALL LIST</button>
 
@@ -413,11 +430,9 @@ const EDGE = { top:150, bottom:150, side:40, topSP:96, bottomSP:96, sideSP:16 };
 
 const stage = $("#stage"), grid = $("#grid");
 let CW, CH, tiles=[], boardW=0, boardH=0;
-let ox=0, oy=0, vx=0, vy=0, dragging=false, moved=0, lastX=0, lastY=0, lastT=0;
-let minOX=0, maxOX=0, minOY=0, maxOY=0;
+let dragging=false, moved=0, lastX=0, lastY=0, downCard=null;
 let activeFilter = null;
-let peekId = null, peekEl = null;   // 概要ポップアップの状態（loop() より先に定義しておく）
-let downCard = null;                // pointerdown で押したカード
+let peekId = null, peekEl = null;   // 概要ポップアップの状態
 
 /* ---- 見たテーマの記録（ブラウザに保存） ---- */
 const SEEN_KEY = "seisaku-seen-v1";
@@ -436,24 +451,34 @@ function paintSeen(){
 
 const shownThemes = ()=> activeFilter ? THEMES.filter(t=>t.tags.includes(activeFilter)) : THEMES;
 
+/* ボードを組み立てる。スクロール自体はブラウザ標準に任せる
+   （LINEやXのアプリ内ブラウザは独自ドラッグだと下方向を奪われるため） */
 function buildBoard(keepPos){
+  const sx=keepPos?stage.scrollLeft:0, sy=keepPos?stage.scrollTop:0;
   grid.innerHTML=""; tiles=[];
-  const vw=innerWidth, vh=innerHeight, narrow=vw<760;
-  const gap    = narrow?Math.round(CARD.gap*0.7):CARD.gap;
-  const mTop   = narrow?EDGE.topSP:EDGE.top;
-  const mBot   = narrow?EDGE.bottomSP:EDGE.bottom;
-  const mSide  = narrow?EDGE.sideSP:EDGE.side;
-  const list   = shownThemes();
-  const cols   = Math.max(1, Math.min(narrow?CARD.mobileCols:CARD.cols, list.length));
+  const vw=stage.clientWidth||innerWidth, vh=stage.clientHeight||innerHeight, narrow=vw<760;
+  const gap   = narrow?Math.round(CARD.gap*0.7):CARD.gap;
+  const mTop  = narrow?EDGE.topSP:EDGE.top;
+  const mBot  = narrow?EDGE.bottomSP:EDGE.bottom;
+  const mSide = narrow?EDGE.sideSP:EDGE.side;
+  const list  = shownThemes();
+  const cols  = Math.max(1, Math.min(narrow?CARD.mobileCols:CARD.cols, list.length));
 
   CW = narrow ? Math.round((vw - mSide*2 - gap*(cols-1))/cols) : CARD.width;
   CH = Math.round(CW*CARD.ratio);
+
+  const rows = Math.ceil(list.length/cols) || 1;
+  boardW = cols*(CW+gap)-gap;
+  boardH = rows*(CH+gap)-gap;
+  const xOff = Math.max(mSide, Math.round((vw-boardW)/2));
+  const yOff = (boardH+mTop+mBot<=vh) ? Math.round(mTop+(vh-mTop-mBot-boardH)/2) : mTop;
 
   list.forEach((t,i)=>{
     const c=i%cols, r=(i/cols)|0;
     const el=document.createElement("div");
     el.className="card"; el.dataset.id=t.id;
     el.style.width=CW+"px"; el.style.height=CH+"px";
+    el.style.transform=`translate3d(${xOff+c*(CW+gap)}px,${yOff+r*(CH+gap)}px,0)`;
     el.innerHTML =
       `<div class="card__inner"><div class="card__bg" style="${bgStyle(t)}"></div>`+
       (t.image?"":`<div class="card__glyph">${glyphOf(t)}</div>`)+
@@ -467,68 +492,53 @@ function buildBoard(keepPos){
         `<div class="tags">${t.tags.slice(0,3).map(x=>`<span class="tag">${x}</span>`).join("")}</div>`+
       `</div>`;
     grid.appendChild(el);
-    tiles.push({el, bx:c*(CW+gap), by:r*(CH+gap), theme:t});
+    tiles.push({el, theme:t});
   });
 
-  const rows = Math.ceil(list.length/cols) || 1;
-  boardW = cols*(CW+gap)-gap;
-  boardH = rows*(CH+gap)-gap;
-
-  // スクロールできる範囲を確定させる（この外には出ない＝無限ループしない）
-  if(boardW <= vw-mSide*2){ minOX = maxOX = Math.round((vw-boardW)/2); }
-  else { maxOX = mSide; minOX = vw - mSide - boardW; }
-  if(boardH <= vh-mTop-mBot){ minOY = maxOY = Math.round(mTop + (vh-mTop-mBot-boardH)/2); }
-  else { maxOY = mTop; minOY = vh - mBot - boardH; }
-
-  if(keepPos){ ox=clampX(ox); oy=clampY(oy); } else { ox=maxOX; oy=maxOY; }
+  // スクロールできる範囲＝ボードの実寸。これ以上は動かない（無限ループしない）
+  grid.style.width  = Math.max(vw, boardW+xOff*2)+"px";
+  grid.style.height = Math.max(vh, boardH+yOff+mBot)+"px";
+  stage.scrollLeft = Math.min(sx, stage.scrollWidth-stage.clientWidth);
+  stage.scrollTop  = Math.min(sy, stage.scrollHeight-stage.clientHeight);
   paintSeen();
-  render();
+  onScroll();
 }
 
-const clampX = v => Math.min(maxOX, Math.max(minOX, v));
-const clampY = v => Math.min(maxOY, Math.max(minOY, v));
-
-function render(){
-  for(const t of tiles) t.el.style.transform = `translate3d(${t.bx+ox}px,${t.by+oy}px,0)`;
-  // 右端のスクロール位置インジケータ
+/* 右端の位置インジケータ / 「上へ」ボタン */
+function onScroll(){
   const bar=$("#scrollbar"), th=bar.firstElementChild;
-  const range = maxOY-minOY;
-  if(range<=0){ bar.classList.remove("on"); }
+  const range = stage.scrollHeight-stage.clientHeight;
+  if(range<=4){ bar.classList.remove("on"); }
   else{
     bar.classList.add("on");
-    const ratio = Math.min(1, innerHeight/(boardH+80));
-    const prog  = (maxOY-clampY(oy))/range;
-    th.style.height = Math.max(8, ratio*100)+"%";
-    th.style.top = (prog*(100-Math.max(8, ratio*100)))+"%";
+    const h = Math.max(10, stage.clientHeight/stage.scrollHeight*100);
+    th.style.height = h+"%";
+    th.style.top = (stage.scrollTop/range*(100-h))+"%";
   }
+  $("#toTop").classList.toggle("on", stage.scrollTop>240);
+  if(stage.scrollTop>40 || stage.scrollLeft>40) $("#hint").classList.add("hide");
 }
+stage.addEventListener("scroll",()=>{ closePeek(); onScroll(); },{passive:true});
+$("#toTop").onclick = ()=> stage.scrollTo({top:0,left:0,behavior:"smooth"});
 
-/* ドラッグ + 慣性（範囲外はゴムのように戻る） */
+/* マウスのドラッグでも動かせるようにする（タッチは標準のスクロールに任せる） */
 function down(e){
-  dragging=true; moved=0; stage.classList.add("dragging");
-  lastX=e.clientX; lastY=e.clientY; lastT=performance.now(); vx=vy=0;
-  // どのカードを押したかをここで確定させる（setPointerCapture は click の
-  // ターゲットを #stage に付け替えてしまうので使わない）
   downCard = (e.target.closest && e.target.closest(".card")) || null;
+  moved=0; lastX=e.clientX; lastY=e.clientY;
+  if(e.pointerType==="mouse"){ dragging=true; stage.classList.add("dragging"); }
 }
 function move(e){
   if(!dragging) return;
   const dx=e.clientX-lastX, dy=e.clientY-lastY;
-  const now=performance.now(), dt=Math.max(1,now-lastT);
-  ox+=dx; oy+=dy; moved+=Math.abs(dx)+Math.abs(dy);
-  // 端を越えたぶんは抵抗をかけて引き戻す
-  ox = clampX(ox) + (ox-clampX(ox))*0.45;
-  oy = clampY(oy) + (oy-clampY(oy))*0.45;
-  vx=dx/dt*16; vy=dy/dt*16;
-  lastX=e.clientX; lastY=e.clientY; lastT=now;
-  if(moved>30) $("#hint").classList.add("hide");
+  moved+=Math.abs(dx)+Math.abs(dy);
+  stage.scrollLeft-=dx; stage.scrollTop-=dy;
+  lastX=e.clientX; lastY=e.clientY;
   if(moved>6) closePeek();
-  render();
 }
-function up(){
-  if(!dragging) return;
+function up(e){
+  const wasDrag = moved>8;
   dragging=false; stage.classList.remove("dragging");
-  if(moved<=8) tapCard(downCard);   // 動かしていなければ「クリック」とみなす
+  if(!wasDrag && downCard) tapCard(downCard);
   downCard=null;
 }
 function cancel(){ dragging=false; stage.classList.remove("dragging"); downCard=null; }
@@ -536,27 +546,6 @@ stage.addEventListener("pointerdown",down);
 addEventListener("pointermove",move);
 addEventListener("pointerup",up);
 addEventListener("pointercancel",cancel);
-stage.addEventListener("wheel",e=>{
-  e.preventDefault(); closePeek();
-  ox=clampX(ox-e.deltaX); oy=clampY(oy-e.deltaY);
-  $("#hint").classList.add("hide"); render();
-},{passive:false});
-
-(function loop(){
-  if(!dragging){
-    const cx=clampX(ox), cy=clampY(oy);
-    if(Math.abs(cx-ox)>0.4 || Math.abs(cy-oy)>0.4){        // 範囲外 → 戻す
-      ox+=(cx-ox)*0.18; oy+=(cy-oy)*0.18; vx=vy=0; render();
-    }else if(Math.abs(vx)>0.05||Math.abs(vy)>0.05){         // 慣性
-      ox=cx; oy=cy;
-      ox+=vx; oy+=vy; vx*=0.92; vy*=0.92;
-      if(ox!==clampX(ox)){ ox=clampX(ox); vx=0; }
-      if(oy!==clampY(oy)){ oy=clampY(oy); vy=0; }
-      render();
-    }
-  }
-  requestAnimationFrame(loop);
-})();
 
 /* ============ クリック1回目＝概要ポップアップ / 2回目＝詳細ページ ============ */
 const peek = $("#peek");
