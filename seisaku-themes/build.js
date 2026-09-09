@@ -19,10 +19,10 @@ const ctx = {};
 vm.createContext(ctx);
 vm.runInContext(
   fs.readFileSync(path.join(SRC, "data.js"), "utf8") +
-    "\n;this.__ = { THEMES, SITE, CATEGORIES };",
+    "\n;this.__ = { THEMES, SITE, CATEGORIES, VISION: typeof VISION!=='undefined'?VISION:null };",
   ctx
 );
-const { THEMES, SITE } = ctx.__;
+const { THEMES, SITE, VISION } = ctx.__;
 
 const TEMPLATE = fs.readFileSync(path.join(SRC, "index.html"), "utf8");
 const BASE = (SITE.url || "").replace(/\/$/, "");
@@ -83,6 +83,7 @@ function preIndex() {
   return [
     `<h1>${esc(SITE.name)}</h1>`,
     `<p>${esc(SITE.lead)}</p>`,
+    VISION ? `<h2>${esc(VISION.title)}</h2><p>${esc(VISION.subtitle)}</p><p>${esc(VISION.body)}</p>` : "",
     `<h2>政策課題 一覧</h2><ul>`,
     THEMES.map((t) => `<li><a href="/t/${esc(t.id)}">${esc(t.title)}</a>${t.summary ? `　${esc(t.summary)}` : ""}</li>`).join(""),
     `</ul>`,
@@ -96,7 +97,7 @@ const page = (h, pre) =>
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(path.join(OUT, "t"), { recursive: true });
 
-const siteDesc = trim(SITE.lead, 150);
+const siteDesc = trim((VISION && VISION.body) || SITE.lead, 150);
 fs.writeFileSync(
   path.join(OUT, "index.html"),
   page(head({ title: `${SITE.name}｜${SITE.owner}`, desc: siteDesc, url: BASE + "/" }), preIndex())

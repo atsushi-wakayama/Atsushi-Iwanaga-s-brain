@@ -127,7 +127,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   display:block;font-family:var(--sans);font-size:11px;color:var(--muted);
   letter-spacing:.2em;margin-top:8px;font-weight:500;
 }
-#brand .lead{max-width:330px;margin:16px 0 0;font-size:12.5px;line-height:1.95;color:var(--muted)}
+#brand .vision{
+  max-width:330px;margin:16px 0 0;font-family:var(--serif);font-weight:700;
+  font-size:15px;line-height:1.75;color:var(--green);letter-spacing:.02em;
+}
+#brand .lead{max-width:330px;margin:10px 0 0;font-size:12.5px;line-height:1.95;color:var(--muted)}
 
 /* ナビゲーション：緑のアンダーライン */
 #nav{top:0;right:0;padding:34px 34px;display:flex;gap:26px;font-size:12.5px;letter-spacing:.12em;font-weight:500}
@@ -309,6 +313,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 #listview{position:fixed;inset:0;z-index:50;background:#fff;overflow-y:auto;display:none;padding:104px clamp(24px,7vw,90px) 90px}
 #listview.open{display:block}
 #listview::before{content:"";position:fixed;top:0;left:0;right:0;height:5px;background:var(--band);z-index:2}
+#visionBox{
+  max-width:820px;margin:0 0 clamp(38px,6vw,64px);padding:clamp(24px,4vw,34px) clamp(22px,4vw,36px);
+  border-radius:20px;background:var(--green-l);position:relative;overflow:hidden;
+}
+#visionBox::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;background:var(--band)}
+#visionBox .vt{font-family:var(--serif);font-weight:900;font-size:clamp(20px,3vw,28px);line-height:1.5;color:var(--green-d);margin:0 0 10px}
+#visionBox .vs{font-size:12px;letter-spacing:.14em;color:var(--green);margin:0 0 18px;font-weight:700}
+#visionBox .vb{font-size:14.5px;line-height:2.05;color:var(--ink);margin:0}
 #listview h2{font-family:var(--serif);font-weight:900;font-size:30px;margin:0 0 8px;color:var(--green-d)}
 #listview .lsub{font-size:12px;color:var(--muted);letter-spacing:.1em;margin:0 0 30px}
 .lrow{display:flex;gap:20px;align-items:baseline;padding:22px 4px;border-top:1px solid var(--line);width:100%;text-align:left;transition:padding-left .3s var(--ease),background .3s}
@@ -330,6 +342,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   #brand{padding:20px 18px}
   #brand .logo{font-size:23px}
   #brand .lead{display:none}
+  #brand .vision{display:none}
   #nav{display:none}
   #listbtn{display:none}
   #foot{display:none}
@@ -355,6 +368,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 
 <header class="ui" id="brand">
   <h1 class="logo" id="siteName">政策のいま<small id="siteNameEn"></small></h1>
+  <p class="vision" id="siteVision"></p>
   <p class="lead" id="siteLead"></p>
 </header>
 
@@ -404,7 +418,12 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 </div>
 
 <!-- 一覧 -->
-<div id="listview"><h2>政策課題 一覧</h2><p class="lsub">ALL POLICY ISSUES</p><div id="listrows"></div></div>
+<div id="listview">
+  <section id="visionBox">
+    <p class="vt"></p><p class="vs"></p><p class="vb"></p>
+  </section>
+  <h2>政策課題 一覧</h2><p class="lsub">ALL POLICY ISSUES</p><div id="listrows"></div>
+</div>
 <button id="closeList" style="display:none">×</button>
 
 <script src="/data.js"></script>
@@ -424,6 +443,14 @@ function shade(hex,p){const n=parseInt(hex.slice(1),16);const f=(s)=>Math.max(0,
 $("#siteNameEn").textContent = SITE.nameEn;
 $("#siteName").firstChild.textContent = SITE.name;
 $("#siteLead").textContent = SITE.lead;
+if(typeof VISION!=="undefined" && VISION){
+  $("#siteVision").textContent = VISION.title || "";
+  $("#visionBox .vt").textContent = VISION.title || "";
+  $("#visionBox .vs").textContent = VISION.subtitle || "";
+  $("#visionBox .vb").textContent = VISION.body || "";
+}else{
+  $("#visionBox").style.display="none";
+}
 $("#foot").textContent = SITE.footer;
 const BASE_TITLE = SITE.name + "｜" + SITE.owner;
 const setTitle = t => document.title = t ? `${t.title}｜${SITE.name}` : BASE_TITLE;
