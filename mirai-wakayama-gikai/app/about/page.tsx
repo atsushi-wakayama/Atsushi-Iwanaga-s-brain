@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Megaphone,
   CalendarClock,
+  Newspaper,
 } from "lucide-react";
 import {
   Card,
@@ -31,6 +32,8 @@ import {
   septemberSupplement,
   septemberDebtObligations,
   septemberGovernorStatement,
+  pastMovements,
+  pastMovementsSource,
 } from "@/data/mock";
 
 export const metadata: Metadata = {
@@ -96,6 +99,9 @@ export default function AboutPage() {
             </a>
             <a href="#june-supplement" className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 h-9 text-sm font-semibold text-slate-700 hover:border-wakayama-orange hover:text-wakayama-orange-dark transition-colors">
               6月補正予算（案）
+            </a>
+            <a href="#past-movements" className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 h-9 text-sm font-semibold text-slate-700 hover:border-wakayama-orange hover:text-wakayama-orange-dark transition-colors">
+              過去の県政の動き
             </a>
           </div>
         </div>
@@ -326,6 +332,17 @@ export default function AboutPage() {
           </p>
         </div>
       </section>
+
+      {/* アーカイブ見出し */}
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-14">
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-slate-200" aria-hidden />
+          <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+            Archive ／ これまでの予算・県政の動き
+          </p>
+          <span className="h-px flex-1 bg-slate-200" aria-hidden />
+        </div>
+      </div>
 
       {/* 当初予算 6本の柱 */}
       <section id="initial-budget" className="mx-auto max-w-6xl px-4 sm:px-6 py-14 scroll-mt-20">
@@ -586,15 +603,73 @@ export default function AboutPage() {
         </div>
 
         <p className="mt-6 text-[11px] text-slate-400">{juneSupplement.sourceNote}</p>
+      </section>
 
-        <div className="mt-8">
-          <Link
-            href="/members"
-            className="inline-flex items-center gap-2 rounded-md bg-wakayama-orange px-6 h-11 text-sm font-semibold text-white hover:bg-wakayama-orange/90 shadow-sm transition-colors"
-          >
-            議員の活動を見る
-            <ArrowRight size={16} />
-          </Link>
+      {/* 過去の県政の動き（アーカイブ） */}
+      <section
+        id="past-movements"
+        className="bg-white border-y border-slate-200 scroll-mt-20"
+      >
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-14">
+          <div className="mb-6">
+            <div className="flex items-center gap-2 text-wakayama-blue-dark">
+              <Newspaper size={18} />
+              <p className="text-sm font-semibold tracking-wider uppercase">
+                Past Movements
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+                過去の県政の動き
+              </h2>
+              <Badge variant="outline">{pastMovementsSource.sessionName}</Badge>
+            </div>
+            <p className="text-sm text-slate-600 mt-1">
+              {pastMovementsSource.sessionName} 知事説明要旨で報告された県政トピックスのアーカイブです。
+              最新の動きはトップページに掲載しています。
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {pastMovements.map((n) => (
+              <Card key={n.title} className="flex flex-col">
+                <CardHeader className="pb-2">
+                  <Badge variant="secondary" className="w-fit">
+                    {n.category}
+                  </Badge>
+                  <CardTitle className="text-base leading-snug mt-2">
+                    {n.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    {n.summary}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <p className="mt-6 text-[11px] text-slate-400">
+            {pastMovementsSource.sourceNote}
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              href="/members"
+              className="inline-flex items-center gap-2 rounded-md bg-wakayama-orange px-6 h-11 text-sm font-semibold text-white hover:bg-wakayama-orange/90 shadow-sm transition-colors"
+            >
+              議員の活動を見る
+              <ArrowRight size={16} />
+            </Link>
+            <Link
+              href="/#news"
+              className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-6 h-11 text-sm font-semibold text-slate-900 hover:bg-slate-50 transition-colors"
+            >
+              最新の県政の動きを見る
+              <ArrowRight size={16} />
+            </Link>
+          </div>
         </div>
       </section>
     </div>

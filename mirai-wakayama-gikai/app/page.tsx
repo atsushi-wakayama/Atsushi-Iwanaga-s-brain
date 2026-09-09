@@ -23,6 +23,7 @@ import {
   sessionWindows,
   septemberSupplement,
   recentMovements,
+  recentMovementsSource,
 } from "@/data/mock";
 
 export const dynamic = "force-dynamic";
@@ -188,7 +189,7 @@ export default function HomePage() {
       </section>
 
       {/* Recent movements */}
-      <section className="mx-auto max-w-6xl px-4 sm:px-6 py-14">
+      <section id="news" className="mx-auto max-w-6xl px-4 sm:px-6 py-14 scroll-mt-20">
         <div className="mb-6">
           <div className="flex items-center gap-2 text-wakayama-blue-dark">
             <Newspaper size={18} />
@@ -200,7 +201,7 @@ export default function HomePage() {
             県政の最近の動き
           </h2>
           <p className="text-sm text-slate-600 mt-1">
-            令和8年2月定例会 知事説明要旨より、県政トピックスをピックアップ。
+            {recentMovementsSource.sessionName} 知事説明要旨より、県政トピックスをピックアップ。
           </p>
         </div>
 
@@ -223,6 +224,26 @@ export default function HomePage() {
             </Card>
           ))}
         </div>
+
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <Link
+            href="/about#governor-statement"
+            className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-6 h-11 text-sm font-semibold text-slate-900 hover:bg-slate-50 transition-colors"
+          >
+            知事説明要旨の全文要約を見る
+            <ArrowRight size={16} />
+          </Link>
+          <Link
+            href="/about#past-movements"
+            className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-6 h-11 text-sm font-semibold text-slate-900 hover:bg-slate-50 transition-colors"
+          >
+            過去の県政の動き（アーカイブ）
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+        <p className="mt-4 text-[11px] text-slate-400">
+          {recentMovementsSource.sourceNote}
+        </p>
       </section>
 
       {/* Schedule timeline */}
