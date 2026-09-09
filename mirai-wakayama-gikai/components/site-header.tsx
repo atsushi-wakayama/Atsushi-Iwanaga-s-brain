@@ -5,7 +5,7 @@ const nav = [
   { href: "/", label: "トップ" },
   { href: "/members", label: "議員を探す" },
   { href: "/#schedule", label: "議会日程" },
-  { href: "/#budget", label: "6月補正" },
+  { href: "/#budget", label: "9月補正" },
   { href: "/about", label: "県政について" },
   { href: "/policy", label: "運営方針" },
 ];

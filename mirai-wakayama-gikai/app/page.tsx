@@ -21,7 +21,7 @@ import {
   assemblyStatus,
   schedule,
   sessionWindows,
-  juneSupplement,
+  septemberSupplement,
   recentMovements,
 } from "@/data/mock";
 
@@ -356,11 +356,11 @@ export default function HomePage() {
               </p>
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">
-              {juneSupplement.fiscalYear}
-              {juneSupplement.name}
+              {septemberSupplement.fiscalYear}
+              {septemberSupplement.name}
             </h2>
             <p className="text-sm text-slate-700 mt-2 leading-relaxed max-w-3xl">
-              {juneSupplement.headline}
+              {septemberSupplement.headline}
             </p>
           </div>
 
@@ -371,7 +371,7 @@ export default function HomePage() {
                 補正前 現計予算
               </p>
               <p className="mt-1 text-xl font-bold text-slate-900">
-                {juneSupplement.generalAccount.before.toLocaleString()}
+                {septemberSupplement.generalAccount.before.toLocaleString()}
                 <span className="text-sm font-medium text-slate-500 ml-1">
                   百万円
                 </span>
@@ -379,22 +379,22 @@ export default function HomePage() {
             </div>
             <div className="rounded-xl border border-wakayama-orange/30 bg-wakayama-orange-soft p-5">
               <p className="text-xs font-semibold text-wakayama-orange-dark">
-                6月補正額
+                9月補正額
               </p>
               <p className="mt-1 text-xl font-bold text-wakayama-orange-dark">
-                +{juneSupplement.generalAccount.supplement.toLocaleString()}
+                +{septemberSupplement.generalAccount.supplement.toLocaleString()}
                 <span className="text-sm font-medium ml-1">百万円</span>
               </p>
               <p className="text-[11px] text-wakayama-orange-dark/80 mt-0.5">
-                （{juneSupplement.amountText}）
+                （{septemberSupplement.amountText}）
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <p className="text-xs font-semibold text-slate-500">
-                6月補正後 現計
+                9月補正後 現計
               </p>
               <p className="mt-1 text-xl font-bold text-slate-900">
-                {juneSupplement.generalAccount.after.toLocaleString()}
+                {septemberSupplement.generalAccount.after.toLocaleString()}
                 <span className="text-sm font-medium text-slate-500 ml-1">
                   百万円
                 </span>
@@ -404,7 +404,7 @@ export default function HomePage() {
 
           {/* 主要事業（カテゴリ） */}
           <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {juneSupplement.expenditure.map((e) => (
+            {septemberSupplement.expenditure.map((e) => (
               <Card key={e.label}>
                 <CardHeader className="pb-2">
                   <CardDescription className="text-xs">歳出</CardDescription>
@@ -426,22 +426,29 @@ export default function HomePage() {
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
-              href="/about#june-supplement"
+              href="/about#september-supplement"
               className="inline-flex items-center gap-2 rounded-md bg-wakayama-orange px-6 h-11 text-sm font-semibold text-white hover:bg-wakayama-orange/90 shadow-sm transition-colors"
             >
-              6月補正の主要事業を見る
+              9月補正の主要事業を見る
               <ArrowRight size={16} />
             </Link>
             <Link
-              href="/about"
+              href="/about#governor-statement"
               className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-6 h-11 text-sm font-semibold text-slate-900 hover:bg-slate-50 transition-colors"
             >
-              県政について（当初予算の概要）
+              知事説明要旨（9月定例会）
+              <ArrowRight size={16} />
+            </Link>
+            <Link
+              href="/about#june-supplement"
+              className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-6 h-11 text-sm font-semibold text-slate-900 hover:bg-slate-50 transition-colors"
+            >
+              6月補正を見る
               <ArrowRight size={16} />
             </Link>
           </div>
           <p className="mt-4 text-[11px] text-slate-400">
-            {juneSupplement.sourceNote}
+            {septemberSupplement.sourceNote}
           </p>
         </div>
       </section>

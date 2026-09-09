@@ -9,6 +9,8 @@ import {
   Landmark,
   Wallet,
   ArrowRight,
+  Megaphone,
+  CalendarClock,
 } from "lucide-react";
 import {
   Card,
@@ -26,17 +28,20 @@ import {
   budgetBreakdown,
   priorityPolicies,
   juneSupplement,
+  septemberSupplement,
+  septemberDebtObligations,
+  septemberGovernorStatement,
 } from "@/data/mock";
 
 export const metadata: Metadata = {
   title: "県政について",
   description:
-    "和歌山県の令和8年度当初予算（一般会計6,499億円・過去最大規模）の概要、新総合計画「6本の政策の柱」、予算の使い道、6月補正予算（案）をまとめた県政の解説ページです。",
+    "和歌山県の令和8年度当初予算（一般会計6,499億円・過去最大規模）の概要、新総合計画「6本の政策の柱」、予算の使い道、9月補正予算（案）・知事説明要旨、6月補正予算（案）をまとめた県政の解説ページです。",
   alternates: { canonical: "/about" },
   openGraph: {
     title: "県政について | みらいのわかやま県議会",
     description:
-      "和歌山県の令和8年度当初予算の概要・6本の政策の柱・予算の使い道・6月補正予算をまとめた県政解説ページ。",
+      "和歌山県の令和8年度当初予算の概要・6本の政策の柱・予算の使い道・9月補正予算・6月補正予算をまとめた県政解説ページ。",
     url: "/about",
     type: "website",
   },
@@ -52,6 +57,7 @@ function fmtOku(thousandYen: number) {
 export default function AboutPage() {
   const totalBudget = budgetBreakdown.reduce((s, b) => s + b.value, 0);
   const ga = juneSupplement.generalAccount;
+  const sga = septemberSupplement.generalAccount;
 
   return (
     <div>
@@ -71,11 +77,17 @@ export default function AboutPage() {
           </h1>
           <p className="mt-3 text-base text-slate-600 max-w-3xl leading-relaxed">
             和歌山県の令和8年度当初予算の概要、新総合計画で掲げる「6本の政策の柱」、
-            予算の使い道、そして直近の6月補正予算（案）を分かりやすくまとめました。
+            予算の使い道、そして各定例会の補正予算（9月・6月）を分かりやすくまとめました。
           </p>
 
           {/* quick nav */}
           <div className="mt-6 flex flex-wrap gap-2">
+            <a href="#governor-statement" className="inline-flex items-center gap-1.5 rounded-full border border-wakayama-orange/40 bg-wakayama-orange-soft px-4 h-9 text-sm font-semibold text-wakayama-orange-dark hover:border-wakayama-orange transition-colors">
+              知事説明要旨（9月）
+            </a>
+            <a href="#september-supplement" className="inline-flex items-center gap-1.5 rounded-full border border-wakayama-orange/40 bg-wakayama-orange-soft px-4 h-9 text-sm font-semibold text-wakayama-orange-dark hover:border-wakayama-orange transition-colors">
+              9月補正予算（案）
+            </a>
             <a href="#initial-budget" className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 h-9 text-sm font-semibold text-slate-700 hover:border-wakayama-orange hover:text-wakayama-orange-dark transition-colors">
               令和8年度 当初予算
             </a>
@@ -86,6 +98,232 @@ export default function AboutPage() {
               6月補正予算（案）
             </a>
           </div>
+        </div>
+      </section>
+
+      {/* 知事説明要旨（9月定例会） */}
+      <section id="governor-statement" className="mx-auto max-w-6xl px-4 sm:px-6 py-14 scroll-mt-20">
+        <div className="mb-6">
+          <div className="flex items-center gap-2 text-wakayama-orange-dark">
+            <Megaphone size={18} />
+            <p className="text-sm font-semibold tracking-wider uppercase">
+              Governor&apos;s Statement
+            </p>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">
+            {septemberGovernorStatement.sessionName} 知事説明要旨
+          </h2>
+          <p className="text-sm text-slate-700 mt-2 leading-relaxed max-w-3xl">
+            {septemberGovernorStatement.lead}
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {septemberGovernorStatement.topics.map((t) => (
+            <Card key={t.heading} className="flex flex-col">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base leading-snug">
+                  {t.heading}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1">
+                <p className="text-sm text-slate-600 leading-relaxed">{t.body}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+          <h3 className="text-sm font-bold text-slate-900 mb-2">
+            提出された議案等
+          </h3>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            {septemberGovernorStatement.bills}
+          </p>
+        </div>
+
+        <p className="mt-4 text-[11px] text-slate-400">
+          {septemberGovernorStatement.sourceNote}
+        </p>
+      </section>
+
+      {/* 9月補正予算 */}
+      <section
+        id="september-supplement"
+        className="bg-white border-y border-slate-200 scroll-mt-20"
+      >
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-14">
+          <div className="mb-6">
+            <div className="flex items-center gap-2 text-wakayama-orange-dark">
+              <Wallet size={18} />
+              <p className="text-sm font-semibold tracking-wider uppercase">
+                Supplementary Budget (Sep)
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+                {septemberSupplement.fiscalYear}
+                {septemberSupplement.name}
+              </h2>
+              <Badge variant="default">最新</Badge>
+            </div>
+            <p className="text-sm text-slate-700 mt-2 leading-relaxed max-w-3xl">
+              {septemberSupplement.headline}
+            </p>
+          </div>
+
+          {/* 補正額サマリー */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <p className="text-xs font-semibold text-slate-500">補正前 現計予算</p>
+              <p className="mt-1 text-xl font-bold text-slate-900">
+                {sga.before.toLocaleString()}
+                <span className="text-sm font-medium text-slate-500 ml-1">百万円</span>
+              </p>
+            </div>
+            <div className="rounded-xl border border-wakayama-orange/30 bg-wakayama-orange-soft p-5">
+              <p className="text-xs font-semibold text-wakayama-orange-dark">9月補正額</p>
+              <p className="mt-1 text-xl font-bold text-wakayama-orange-dark">
+                +{sga.supplement.toLocaleString()}
+                <span className="text-sm font-medium ml-1">百万円</span>
+              </p>
+              <p className="text-[11px] text-wakayama-orange-dark/80 mt-0.5">
+                （{septemberSupplement.amountText}）
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <p className="text-xs font-semibold text-slate-500">9月補正後 現計</p>
+              <p className="mt-1 text-xl font-bold text-slate-900">
+                {sga.after.toLocaleString()}
+                <span className="text-sm font-medium text-slate-500 ml-1">百万円</span>
+              </p>
+            </div>
+          </div>
+
+          <p className="mt-3 text-xs text-slate-500">
+            【参考】{septemberSupplement.previousYearRef.label}の9月補正額は{" "}
+            {septemberSupplement.previousYearRef.supplement.toLocaleString()} 百万円（9月補正後現計{" "}
+            {septemberSupplement.previousYearRef.after.toLocaleString()} 百万円）。
+          </p>
+
+          {/* 歳入・歳出フレーム */}
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">歳入の補正</CardTitle>
+                <CardDescription>主な財源の内訳（百万円）</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="divide-y divide-slate-100">
+                  {septemberSupplement.revenue.map((r) => (
+                    <li key={r.label} className="flex items-center justify-between py-2.5">
+                      <span className="text-sm text-slate-700">{r.label}</span>
+                      <span className={`text-sm font-semibold tabular-nums ${r.value < 0 ? "text-rose-600" : "text-slate-900"}`}>
+                        {r.value < 0 ? "▲" : ""}
+                        {Math.abs(r.value).toLocaleString()}
+                      </span>
+                    </li>
+                  ))}
+                  <li className="flex items-center justify-between py-2.5 border-t-2 border-slate-200">
+                    <span className="text-sm font-bold text-slate-900">計</span>
+                    <span className="text-sm font-bold text-slate-900 tabular-nums">
+                      {sga.supplement.toLocaleString()}
+                    </span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">歳出の補正</CardTitle>
+                <CardDescription>主な使い道の内訳（百万円）</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="divide-y divide-slate-100">
+                  {septemberSupplement.expenditure.map((e) => (
+                    <li key={e.label} className="flex items-start justify-between gap-3 py-2.5">
+                      <span className="text-sm text-slate-700">{e.label}</span>
+                      <span className="text-sm font-semibold text-slate-900 tabular-nums shrink-0">
+                        {e.value.toLocaleString()}
+                      </span>
+                    </li>
+                  ))}
+                  <li className="flex items-center justify-between py-2.5 border-t-2 border-slate-200">
+                    <span className="text-sm font-bold text-slate-900">計</span>
+                    <span className="text-sm font-bold text-slate-900 tabular-nums">
+                      {sga.supplement.toLocaleString()}
+                    </span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 主要事業 */}
+          <h3 className="mt-10 mb-4 text-xl font-bold text-slate-900">主要事業</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            {septemberSupplement.projects.map((p) => (
+              <Card key={p.title} className="flex flex-col">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <Badge variant="secondary" className="w-fit">
+                      {p.category}
+                    </Badge>
+                    <span className="text-sm font-bold text-wakayama-orange-dark tabular-nums">
+                      {fmtOku(p.amountThousand)}
+                    </span>
+                  </div>
+                  <CardTitle className="text-base leading-snug mt-2">
+                    {p.title}
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    担当：{p.dept}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    {p.summary}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* 債務負担行為 */}
+          <div className="mt-10">
+            <div className="flex items-center gap-2 mb-3">
+              <CalendarClock size={18} className="text-wakayama-blue" />
+              <h3 className="text-xl font-bold text-slate-900">
+                債務負担行為の設定
+              </h3>
+            </div>
+            <p className="text-sm text-slate-600 mb-4">
+              翌年度以降の支出を約束する「債務負担行為」を14件設定（追加・変更）します。概要に記載された主なものは次のとおりです。
+            </p>
+            <ul className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
+              {septemberDebtObligations.map((d) => (
+                <li key={d.title} className="p-4">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900">{d.title}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">担当：{d.dept}</p>
+                    </div>
+                    <span className="text-sm font-bold text-wakayama-blue-dark tabular-nums shrink-0">
+                      {fmtOku(d.amountThousand)}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                    {d.summary}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <p className="mt-6 text-[11px] text-slate-400">
+            {septemberSupplement.sourceNote}
+          </p>
         </div>
       </section>
 
@@ -224,9 +462,12 @@ export default function AboutPage() {
               Supplementary Budget
             </p>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">
-            {juneSupplement.fiscalYear}{juneSupplement.name}
-          </h2>
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+              {juneSupplement.fiscalYear}{juneSupplement.name}
+            </h2>
+            <Badge variant="outline">令和8年6月定例会</Badge>
+          </div>
           <p className="text-sm text-slate-700 mt-2 leading-relaxed max-w-3xl">
             {juneSupplement.headline}
           </p>
