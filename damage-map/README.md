@@ -1,0 +1,92 @@
+# 被害箇所マッピング
+
+現場で撮った写真を、Exif の GPS 情報から自動で地図上に配置し、写真の上に直接手書きで注記を入れて記録・共有するツールです。
+豪雨・土砂災害などの被害状況確認や現地視察での利用を想定しています。
+
+- 案件（＝1つの地図）単位で写真を管理
+- 写真の Exif から緯度経度・撮影日時を自動読み取り。GPS が無い写真は地図をタップして位置を指定
+- 写真の上に手書き（黒・朱・青、一つ戻す・全消し）。保存時に元画像と合成して1枚の JPEG に確定
+- 被害の種類（道路損傷／土砂・崩落／倒木／浸水／その他）で色分け・絞り込み・並び替え
+- 招待制のマジックリンク認証。案件ごとにメンバーと権限を管理
+- 閲覧専用の共有リンクを発行（議会答弁・広報での引用向け。書き込み不可）
+
+## 構成
+
+| 領域 | 使うもの |
+| --- | --- |
+| フロント／サーバー | Next.js 16（App Router）+ TypeScript、Vercel にデプロイ |
+| 地図 | Leaflet + 地理院タイル（淡色／標準／航空写真を切替） |
+| Exif 読み取り | exifr |
+| DB | Supabase（Postgres）。RLS で案件ごとのアクセス制御 |
+| 画像 | Supabase Storage の非公開バケット。DB には参照パスとメタデータのみ |
+| 認証 | Supabase Auth のマジックリンク（パスワードなし） |
+
+## セットアップ
+
+### 1. Supabase プロジェクトを作る
+
+1. https://supabase.com でプロジェクトを作成（Region は `Northeast Asia (Tokyo)` を推奨）
+2. **SQL Editor** を開き、`supabase/schema.sql` の中身をすべて貼り付けて実行する
+   - テーブル、RLS ポリシー、Storage バケット `damage-photos` がまとめて作られる
+3. **Authentication > Providers > Email** で「Enable Email provider」を ON、
+   「Confirm email」を ON にしておく（マジックリンクで使う）
+4. **Authentication > URL Configuration** で
+   - Site URL に本番URL（例 `https://damage-map.vercel.app`）
+   - Redirect URLs に `https://<本番URL>/auth/callback` と `http://localhost:3002/auth/callback` を追加
+
+### 2. 環境変数
+
+`.env.example` をコピーして `.env.local` を作り、Supabase の **Project Settings > API** の値を入れる。
+
+```bash
+cp .env.example .env.local
+```
+
+| 変数 | 用途 |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | service_role key。閲覧専用リンクの解決にサーバー側でのみ使う。**公開・コミット厳禁** |
+
+### 3. ローカルで動かす
+
+```bash
+npm install && npm run dev
+```
+
+### 4. Vercel にデプロイ
+
+```bash
+npx vercel --prod
+```
+
+Vercel のプロジェクト設定で、上記3つの環境変数を Production / Preview 両方に登録する。
+
+## 使い方
+
+1. ログイン画面でメールアドレスを入れると、ログインリンクが届く（パスワード不要）
+2. 「新しい案件をつくる」で案件を作成すると、作成者がオーナーになる
+3. 案件の画面で「写真を撮る」「写真を選ぶ」から写真を取り込む
+   - 1枚ずつ手書き・種類・キャプションを入力して「保存して次へ」
+   - GPS の無い写真は、赤い帯が出ている間に地図をタップすると位置が入る
+4. 「共有・メンバー」からスタッフを招待、または閲覧専用リンクを発行する
+
+## アクセス制御の考え方
+
+- **編集**：オーナーが招待したメールアドレスのみ。招待されていないアドレスでログインしても、その案件は一覧に出ないし開けない（Postgres の RLS で弾いている）
+- **閲覧専用リンク**：`/view/<トークン>` 形式。ログイン不要で見られるが、書き込み・アップロードはできない。有効期限と失効を設定できる
+- **画像**：Storage は非公開。表示のたびに期限付きの署名URLをサーバー側で発行するため、URL の流出リスクが小さい
+
+## データモデル
+
+| テーブル | 内容 |
+| --- | --- |
+| `maps` | 案件（1案件＝1地図） |
+| `map_members` | 案件のメンバーと権限（owner / editor / viewer） |
+| `map_invites` | 招待メールアドレス。初回ログイン時に `claim_invites()` でメンバーへ変換 |
+| `share_links` | 閲覧専用リンクのトークン・有効期限 |
+| `photos` | 画像の Storage パス、緯度経度、被害種類、キャプション、撮影日時 |
+
+## 無料枠の目安
+
+Supabase 無料プランは Postgres 500MB・Storage 1GB。写真は長辺1200pxのJPEG（1枚およそ200〜400KB）に縮小して保存するので、**おおむね3,000枚程度**まで無料枠に収まります。
