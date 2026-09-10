@@ -92,9 +92,8 @@ export default function PhotoEditorModal({
     (async () => {
       const exifr = (await import("exifr")).default;
       const [meta, normalized] = await Promise.all([
-        exifr
-          .parse(file, { gps: true, pick: ["DateTimeOriginal", "CreateDate"] })
-          .catch(() => null),
+        // pick を指定すると GPS ブロックごと除外されてしまうので使わない
+        exifr.parse(file, { gps: true }).catch(() => null),
         normalizeImage(file),
       ]);
       if (cancelled) return;
