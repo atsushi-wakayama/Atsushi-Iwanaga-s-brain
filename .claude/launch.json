@@ -4,14 +4,38 @@
     {
       "name": "mirai-wakayama-gikai (Next.js dev)",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "mirai-wakayama-gikai"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "mirai-wakayama-gikai"
+      ],
       "port": 3000
     },
     {
       "name": "mirai-wakayama-gikai-admin (Next.js dev)",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "mirai-wakayama-gikai-admin"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "mirai-wakayama-gikai-admin"
+      ],
       "port": 3001
+    },
+    {
+      "name": "damage-map (Next.js dev)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "damage-map",
+        "--",
+        "--port",
+        "3002"
+      ],
+      "port": 3002
     }
   ]
 }
