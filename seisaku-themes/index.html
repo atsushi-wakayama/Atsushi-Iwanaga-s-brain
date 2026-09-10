@@ -99,6 +99,20 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.5);
   color:#fff;font-weight:700;backdrop-filter:blur(6px);
 }
+/* 分野ごとの島 */
+.cluster{
+  position:absolute;top:0;left:0;border-radius:26px;
+  border:1px solid transparent;will-change:transform;pointer-events:none;
+}
+.cluster .clabel{
+  position:absolute;top:16px;left:22px;display:flex;align-items:baseline;gap:9px;
+  font-family:var(--serif);font-weight:700;font-size:17px;letter-spacing:.06em;
+}
+.cluster .ccount{
+  font-family:var(--sans);font-style:normal;font-size:11px;font-weight:700;
+  letter-spacing:.06em;opacity:.6;
+}
+
 /* 通し番号と「見た」バッジ */
 .card__no{
   position:absolute;top:13px;right:15px;font-family:var(--serif);font-weight:700;
@@ -356,7 +370,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   #hint{font-size:20px}
   #seen{padding:64px 16px 0;gap:8px}
   #seenBar{width:60px}
-  #scrollbar{top:96px;bottom:96px;right:6px}
+  #scrollbar{top:var(--scrim-top,96px);bottom:96px;right:6px}
+  .cluster{border-radius:20px}
+  .cluster .clabel{top:14px;left:14px;font-size:15px}
   #toTop{right:16px;bottom:86px;width:44px;height:44px}
   .lrow{flex-wrap:wrap;gap:8px}
 }
@@ -466,8 +482,9 @@ const CARD = {
   width: 340,      // PCでのカード幅(px)
   ratio: 1.04,     // 高さ = 幅 × この値
   gap: 22,         // カード同士の間隔(px)
-  cols: 7,         // PCでの列数
-  mobileCols: 2,   // スマホでの列数
+  clusterCols: 3,    // 分野の島の中に並べる列数（PC）
+  clustersPerRow: 3, // 横に並べる島の数（PC）
+  mobileCols: 2,     // スマホでの列数
 };
 /* 画面端の余白（ヘッダーや下部ドックにカードが隠れない距離） */
 const EDGE = { top:150, bottom:150, side:40, topSP:96, bottomSP:96, sideSP:16 };
@@ -497,6 +514,25 @@ const shownThemes = ()=> activeFilter ? THEMES.filter(t=>t.tags.includes(activeF
 
 /* ボードを組み立てる。スクロール自体はブラウザ標準に任せる
    （LINEやXのアプリ内ブラウザは独自ドラッグだと下方向を奪われるため） */
+/* 分野（カテゴリ）ごとの島にまとめる。位置と枠の色で分野が分かるようにする */
+const CAT_TINT = {
+  "医療・福祉":"#3b5f9e", "子育て・教育":"#8a4f2d", "産業・雇用":"#2f6f6a",
+  "農林水産":"#5c6b2f", "防災・インフラ":"#324b7a", "交通":"#4a6f8a",
+  "環境・エネルギー":"#2f6b55", "行財政改革":"#4f4f6b", "地域づくり":"#6b5340",
+};
+const catOf = t => t.tags.find(x=>CATEGORIES.includes(x)) || t.tags[0] || "その他";
+function groupThemes(list){
+  const map = new Map();
+  list.forEach(t=>{
+    const k = catOf(t);
+    if(!map.has(k)) map.set(k,[]);
+    map.get(k).push(t);
+  });
+  // CATEGORIES の並び順に揃える
+  const order = [...CATEGORIES, ...[...map.keys()].filter(k=>!CATEGORIES.includes(k))];
+  return order.filter(k=>map.has(k)).map(k=>({name:k, items:map.get(k)}));
+}
+
 function buildBoard(keepPos){
   const sx=keepPos?stage.scrollLeft:0, sy=keepPos?stage.scrollTop:0;
   grid.innerHTML=""; tiles=[];
@@ -509,38 +545,72 @@ function buildBoard(keepPos){
   document.documentElement.style.setProperty("--scrim-top", mTop+"px");
   const mBot  = narrow?EDGE.bottomSP:EDGE.bottom;
   const mSide = narrow?EDGE.sideSP:EDGE.side;
-  const list  = shownThemes();
-  const cols  = Math.max(1, Math.min(narrow?CARD.mobileCols:CARD.cols, list.length));
+  // 絞り込み中は、その分野ひとつの島にまとめる
+  const groups = activeFilter ? [{name:activeFilter, items:shownThemes()}]
+                              : groupThemes(shownThemes());
 
-  CW = narrow ? Math.round((vw - mSide*2 - gap*(cols-1))/cols) : CARD.width;
+  const gCols  = narrow?CARD.mobileCols:CARD.clusterCols;   // 島の中の列数
+  const perRow = narrow?1:CARD.clustersPerRow;              // 横に並べる島の数
+  const PAD    = {x: narrow?12:18, top: narrow?46:54, bottom: narrow?12:18};
+  const CGAP   = narrow?24:44;                              // 島どうしの間隔
+
+  CW = narrow ? Math.round((vw - mSide*2 - PAD.x*2 - gap*(gCols-1))/gCols) : CARD.width;
   CH = Math.round(CW*CARD.ratio);
 
-  const rows = Math.ceil(list.length/cols) || 1;
-  boardW = cols*(CW+gap)-gap;
-  boardH = rows*(CH+gap)-gap;
+  let cx=0, cy=0, rowH=0, n=0;
+  boardW=0;
+  groups.forEach((g,gi)=>{
+    const cols = Math.max(1, Math.min(gCols, g.items.length));
+    const rows = Math.ceil(g.items.length/cols);
+    const w = cols*(CW+gap)-gap + PAD.x*2;
+    const h = rows*(CH+gap)-gap + PAD.top + PAD.bottom;
+
+    const panel = document.createElement("div");
+    panel.className = "cluster";
+    const tint = CAT_TINT[g.name] || "#4f4f6b";
+    panel.style.cssText = `width:${w}px;height:${h}px;background:${tint}0f;border-color:${tint}33`;
+    panel._x = cx; panel._y = cy;
+    panel.innerHTML = `<span class="clabel" style="color:${tint}">${g.name}`+
+      `<i class="ccount">${g.items.length}</i></span>`;
+    grid.appendChild(panel);
+
+    g.items.forEach((t,i)=>{
+      const c=i%cols, r=(i/cols)|0;
+      n++;
+      const el=document.createElement("div");
+      el.className="card"; el.dataset.id=t.id;
+      el.style.width=CW+"px"; el.style.height=CH+"px";
+      el._x = cx+PAD.x+c*(CW+gap); el._y = cy+PAD.top+r*(CH+gap);
+      el.innerHTML =
+        `<div class="card__inner"><div class="card__bg" style="${bgStyle(t)}"></div>`+
+        (t.image?"":`<div class="card__glyph">${glyphOf(t)}</div>`)+
+        `<div class="card__shade"></div></div>`+
+        `<div class="card__top"><div class="tags">${t.tags.slice(0,3).map(x=>`<span class="tag">${x}</span>`).join("")}</div></div>`+
+        `<span class="card__no">${String(n).padStart(2,"0")}</span>`+
+        `<span class="card__seen">✓ 見た</span>`+
+        `<div class="card__body">`+
+          (t.subtitle?`<p class="card__sub">${t.subtitle}</p>`:"")+
+          `<h3 class="card__title">${t.title}</h3>`+
+          (t.status?`<span class="card__status">${t.status}</span>`:"")+
+        `</div>`;
+      grid.appendChild(el);
+      tiles.push({el, theme:t});
+    });
+
+    rowH = Math.max(rowH, h);
+    boardW = Math.max(boardW, cx+w);
+    if((gi+1)%perRow===0 || gi===groups.length-1){
+      cy += rowH + CGAP; cx = 0; rowH = 0;      // 次の段へ
+    }else{
+      cx += w + CGAP;
+    }
+  });
+  boardH = Math.max(0, cy - CGAP);
+
   const xOff = Math.max(mSide, Math.round((vw-boardW)/2));
   const yOff = (boardH+mTop+mBot<=vh) ? Math.round(mTop+(vh-mTop-mBot-boardH)/2) : mTop;
-
-  list.forEach((t,i)=>{
-    const c=i%cols, r=(i/cols)|0;
-    const el=document.createElement("div");
-    el.className="card"; el.dataset.id=t.id;
-    el.style.width=CW+"px"; el.style.height=CH+"px";
-    el.style.transform=`translate3d(${xOff+c*(CW+gap)}px,${yOff+r*(CH+gap)}px,0)`;
-    el.innerHTML =
-      `<div class="card__inner"><div class="card__bg" style="${bgStyle(t)}"></div>`+
-      (t.image?"":`<div class="card__glyph">${glyphOf(t)}</div>`)+
-      `<div class="card__shade"></div></div>`+
-      `<div class="card__top"><div class="tags">${t.tags.slice(0,3).map(x=>`<span class="tag">${x}</span>`).join("")}</div></div>`+
-      `<span class="card__no">${String(i+1).padStart(2,"0")}</span>`+
-      `<span class="card__seen">✓ 見た</span>`+
-      `<div class="card__body">`+
-        (t.subtitle?`<p class="card__sub">${t.subtitle}</p>`:"")+
-        `<h3 class="card__title">${t.title}</h3>`+
-        (t.status?`<span class="card__status">${t.status}</span>`:"")+
-      `</div>`;
-    grid.appendChild(el);
-    tiles.push({el, theme:t});
+  grid.querySelectorAll(".cluster,.card").forEach(el=>{
+    el.style.transform = `translate3d(${el._x+xOff}px,${el._y+yOff}px,0)`;
   });
 
   // スクロールできる範囲＝ボードの実寸。これ以上は動かない（無限ループしない）
