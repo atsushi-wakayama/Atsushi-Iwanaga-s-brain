@@ -75,12 +75,16 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   font-size:clamp(80px,14vw,190px);line-height:1;
   color:rgba(255,255,255,.13);letter-spacing:-.04em;
 }
-.card__shade{position:absolute;inset:0;background:linear-gradient(to top,rgba(6,26,20,.88) 0%,rgba(6,26,20,.38) 45%,rgba(6,26,20,0) 78%)}
+.card__shade{position:absolute;inset:0;background:
+  linear-gradient(to top,rgba(6,26,20,.88) 0%,rgba(6,26,20,.38) 45%,rgba(6,26,20,0) 78%),
+  linear-gradient(to bottom,rgba(6,26,20,.40) 0%,rgba(6,26,20,0) 26%)}
+.card__top{position:absolute;top:13px;left:14px;right:54px}
+.card__top .tag{background:rgba(255,255,255,.94);color:var(--green-d);border-color:transparent;font-weight:500}
 .card__body{position:absolute;left:0;right:0;bottom:0;padding:18px 18px 16px;color:#fff}
 .card__sub{font-size:11px;letter-spacing:.12em;color:rgba(255,255,255,.72);margin:0 0 6px}
 .card__title{
   font-family:var(--serif);font-weight:700;
-  font-size:22px;line-height:1.32;margin:0 0 10px;letter-spacing:.02em;
+  font-size:22px;line-height:1.32;margin:0 0 11px;letter-spacing:.02em;
   text-shadow:0 2px 12px rgba(0,0,0,.45);
 }
 .tags{display:flex;flex-wrap:wrap;gap:5px}
@@ -90,9 +94,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   backdrop-filter:blur(6px);white-space:nowrap;
 }
 .card__status{
-  position:absolute;top:12px;left:12px;font-size:10.5px;letter-spacing:.08em;
-  padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.94);
-  color:var(--green-d);font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.18);
+  display:inline-flex;align-items:center;font-size:10.5px;letter-spacing:.08em;
+  padding:6px 13px;border-radius:999px;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.5);
+  color:#fff;font-weight:700;backdrop-filter:blur(6px);
 }
 /* 通し番号と「見た」バッジ */
 .card__no{
@@ -522,13 +527,13 @@ function buildBoard(keepPos){
       `<div class="card__inner"><div class="card__bg" style="${bgStyle(t)}"></div>`+
       (t.image?"":`<div class="card__glyph">${glyphOf(t)}</div>`)+
       `<div class="card__shade"></div></div>`+
-      (t.status?`<div class="card__status">${t.status}</div>`:"")+
+      `<div class="card__top"><div class="tags">${t.tags.slice(0,3).map(x=>`<span class="tag">${x}</span>`).join("")}</div></div>`+
       `<span class="card__no">${String(i+1).padStart(2,"0")}</span>`+
       `<span class="card__seen">✓ 見た</span>`+
       `<div class="card__body">`+
         (t.subtitle?`<p class="card__sub">${t.subtitle}</p>`:"")+
         `<h3 class="card__title">${t.title}</h3>`+
-        `<div class="tags">${t.tags.slice(0,3).map(x=>`<span class="tag">${x}</span>`).join("")}</div>`+
+        (t.status?`<span class="card__status">${t.status}</span>`:"")+
       `</div>`;
     grid.appendChild(el);
     tiles.push({el, theme:t});
