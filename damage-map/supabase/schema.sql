@@ -183,8 +183,10 @@ alter table public.photos       enable row level security;
 
 -- maps
 drop policy if exists maps_select on public.maps;
+-- オーナー登録トリガーは AFTER ROW のため、作成直後の RETURNING 時点では
+-- まだ map_members に行が無い。オーナー自身は常に見えるようにしておく。
 create policy maps_select on public.maps
-  for select using (public.is_map_member(id));
+  for select using (owner_id = auth.uid() or public.is_map_member(id));
 
 drop policy if exists maps_insert on public.maps;
 create policy maps_insert on public.maps
