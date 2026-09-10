@@ -150,9 +150,14 @@ export default function PhotoList({
                 className={`card${photo.id === selectedId ? " active" : ""}`}
                 onClick={() => onSelect(photo.id)}
               >
-                {photo.url ? (
+                {photo.thumbUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photo.url} alt="" />
+                  <img
+                    src={photo.thumbUrl}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                  />
                 ) : (
                   <span
                     className="card-thumb-empty"

@@ -10,19 +10,29 @@ export async function withSignedUrls(
 ): Promise<PhotoWithUrl[]> {
   if (photos.length === 0) return [];
 
+  // 原寸とサムネイルをまとめて1回で署名する（往復を増やさない）
+  const paths = [
+    ...new Set([
+      ...photos.map((p) => p.image_path),
+      ...photos.map((p) => p.thumb_path).filter((p): p is string => Boolean(p)),
+    ]),
+  ];
+
   const { data } = await supabase.storage
     .from("damage-photos")
-    .createSignedUrls(
-      photos.map((p) => p.image_path),
-      SIGNED_URL_TTL,
-    );
+    .createSignedUrls(paths, SIGNED_URL_TTL);
 
   const urlByPath = new Map(
     (data ?? []).map((entry) => [entry.path ?? "", entry.signedUrl]),
   );
 
-  return photos.map((photo) => ({
-    ...photo,
-    url: urlByPath.get(photo.image_path) ?? "",
-  }));
+  return photos.map((photo) => {
+    const url = urlByPath.get(photo.image_path) ?? "";
+    return {
+      ...photo,
+      url,
+      // サムネイル未生成の古い写真は原寸で代用する
+      thumbUrl: (photo.thumb_path && urlByPath.get(photo.thumb_path)) || url,
+    };
+  });
 }

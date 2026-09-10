@@ -35,7 +35,7 @@ function popupHtml(photo: PhotoWithUrl) {
     : "";
   return `
     <div style="width:200px;font-family:'Zen Kaku Gothic New',sans-serif;">
-      ${photo.url ? `<img src="${photo.url}" alt="" style="width:100%;display:block;margin-bottom:6px;border:1px solid #C6BFA9;">` : ""}
+      ${photo.thumbUrl ? `<img src="${photo.thumbUrl}" alt="" loading="lazy" style="width:100%;display:block;margin-bottom:6px;border:1px solid #C6BFA9;">` : ""}
       <div style="font-size:11px;color:#565A4E;">${photo.seq ? "No." + photo.seq + " ・ " : ""}${cat.label}${taken ? " ・ " + taken : ""}</div>
       ${photo.caption ? `<div style="font-size:12.5px;margin-top:4px;">${escapeHtml(photo.caption)}</div>` : ""}
       <div style="font-size:10px;color:#565A4E;margin-top:4px;">${photo.lat?.toFixed(5)}, ${photo.lng?.toFixed(5)}</div>

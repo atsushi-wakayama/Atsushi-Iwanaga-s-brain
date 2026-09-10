@@ -20,28 +20,26 @@ export default async function MapPage({
   } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/m/${mapId}`);
 
-  const { data: map } = await supabase
-    .from("maps")
-    .select("*")
-    .eq("id", mapId)
-    .maybeSingle();
+  // 案件と権限は1クエリで、写真とは並列で取る。
+  // Supabase は東京、Vercel の関数も東京だが、往復のたびに遅延が積み上がるため。
+  const [{ data: map }, { data: photos }] = await Promise.all([
+    supabase
+      .from("maps")
+      .select("*, map_members!inner(role)")
+      .eq("id", mapId)
+      .eq("map_members.user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("photos")
+      .select("*")
+      .eq("map_id", mapId)
+      .order("seq", { ascending: false, nullsFirst: false }),
+  ]);
   if (!map) notFound();
 
-  const { data: membership } = await supabase
-    .from("map_members")
-    .select("role")
-    .eq("map_id", mapId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  const role = (membership?.role ?? "viewer") as MapRole;
+  const role = ((map.map_members as { role: MapRole }[])[0]?.role ??
+    "viewer") as MapRole;
   const canEdit = role === "owner" || role === "editor";
-
-  const { data: photos } = await supabase
-    .from("photos")
-    .select("*")
-    .eq("map_id", mapId)
-    .order("created_at", { ascending: false });
 
   const withUrls = await withSignedUrls(supabase, (photos ?? []) as Photo[]);
 

@@ -62,17 +62,27 @@ export default function MapWorkspace({
       } = await supabase.auth.getUser();
       if (!user) throw new Error("ログインが切れています。再度ログインしてください。");
 
-      const path = `${map.id}/${crypto.randomUUID()}.jpg`;
-      const upload = await supabase.storage
-        .from("damage-photos")
-        .upload(path, result.blob, { contentType: "image/jpeg" });
+      const key = crypto.randomUUID();
+      const path = `${map.id}/${key}.jpg`;
+      const thumbPath = `${map.id}/${key}_thumb.jpg`;
+
+      const [upload, thumbUpload] = await Promise.all([
+        supabase.storage
+          .from("damage-photos")
+          .upload(path, result.blob, { contentType: "image/jpeg" }),
+        supabase.storage
+          .from("damage-photos")
+          .upload(thumbPath, result.thumbBlob, { contentType: "image/jpeg" }),
+      ]);
       if (upload.error) throw upload.error;
+      if (thumbUpload.error) throw thumbUpload.error;
 
       const inserted = await supabase
         .from("photos")
         .insert({
           map_id: map.id,
           image_path: path,
+          thumb_path: thumbPath,
           lat: result.lat,
           lng: result.lng,
           category: result.category,
@@ -87,13 +97,19 @@ export default function MapWorkspace({
         .single();
       if (inserted.error) throw inserted.error;
 
-      const signed = await supabase.storage
+      const { data: signed } = await supabase.storage
         .from("damage-photos")
-        .createSignedUrl(path, SIGNED_URL_TTL);
+        .createSignedUrls([path, thumbPath], SIGNED_URL_TTL);
+
+      const signedByPath = new Map(
+        (signed ?? []).map((entry) => [entry.path ?? "", entry.signedUrl]),
+      );
+      const url = signedByPath.get(path) ?? "";
 
       const photo = {
         ...inserted.data,
-        url: signed.data?.signedUrl ?? "",
+        url,
+        thumbUrl: signedByPath.get(thumbPath) ?? url,
       } as PhotoWithUrl;
 
       setPhotos((prev) => [photo, ...prev]);
@@ -137,7 +153,13 @@ export default function MapWorkspace({
       setError(deleteError.message);
       return;
     }
-    await supabase.storage.from("damage-photos").remove([target.image_path]);
+    await supabase.storage
+      .from("damage-photos")
+      .remove(
+        [target.image_path, target.thumb_path].filter(
+          (path): path is string => Boolean(path),
+        ),
+      );
   }
 
   function toggleCategory(key: CategoryKey) {
