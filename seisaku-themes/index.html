@@ -53,6 +53,19 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 #stage{scrollbar-width:none}
 #stage.dragging{cursor:grabbing}
 #grid{position:relative;width:100%;height:100%}
+#canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+
+/* 鳥瞰ビュー：引いたときは文字を整理して、色と位置で分野を見せる */
+#stage.is-far .card__sub,
+#stage.is-far .card__top,
+#stage.is-far .card__status,
+#stage.is-far .card__no,
+#stage.is-far .card__seen{display:none}
+#stage.is-far .card__title{font-size:34px;line-height:1.25}
+#stage.is-far .card__body{padding:22px}
+#stage.is-far .cluster .clabel{font-size:34px;letter-spacing:.04em}
+#stage.is-far .cluster .ccount{font-size:22px}
+#stage.is-far .card{box-shadow:0 8px 20px rgba(15,60,46,.14)}
 #stage::before,#stage::after{content:"";position:fixed;left:0;right:0;height:150px;z-index:5;pointer-events:none}
 #stage::before{top:0;height:var(--scrim-top,150px);background:linear-gradient(to bottom,#fff 62%,rgba(255,255,255,.92) 82%,rgba(255,255,255,0))}
 #stage::after{bottom:0;background:linear-gradient(to top,#fff 12%,rgba(255,255,255,.8) 48%,rgba(255,255,255,0))}
@@ -202,6 +215,22 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   transition:opacity .3s var(--ease), transform .3s var(--ease);
 }
 #toTop.on{opacity:1;pointer-events:auto;transform:none}
+
+/* ズーム操作 */
+#zoomctl{
+  position:fixed;right:22px;bottom:158px;z-index:25;display:flex;align-items:center;gap:2px;
+  background:rgba(255,255,255,.94);backdrop-filter:blur(12px);
+  border:1px solid var(--line);border-radius:999px;padding:4px;
+  box-shadow:0 10px 26px rgba(15,60,46,.16);
+}
+#zoomctl button{
+  min-width:34px;height:34px;border-radius:999px;font-size:15px;color:var(--green-d);
+  display:flex;align-items:center;justify-content:center;transition:background .2s;
+}
+#zoomctl #zoomFit{font-size:11.5px;letter-spacing:.08em;font-weight:700;padding:0 12px;min-width:auto}
+#zoomctl button:hover{background:var(--green-l)}
+#zoomctl button:disabled{opacity:.3;cursor:default}
+#zoomctl #zoomFit.on{background:var(--green);color:#fff}
 
 #dock{
   left:50%;bottom:28px;transform:translateX(-50%);
@@ -374,6 +403,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   .cluster{border-radius:20px}
   .cluster .clabel{top:14px;left:14px;font-size:15px}
   #toTop{right:16px;bottom:86px;width:44px;height:44px}
+  #zoomctl{right:16px;bottom:140px;padding:3px}
+  #zoomctl button{min-width:32px;height:32px}
   .lrow{flex-wrap:wrap;gap:8px}
 }
 </style>
@@ -385,7 +416,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 
 <div id="topband"></div>
 
-<div id="stage"><div id="grid"></div></div>
+<div id="stage"><div id="grid"><div id="canvas"></div></div></div>
 
 <header class="ui" id="brand">
   <h1 class="logo" id="siteName">政策のいま<small id="siteNameEn"></small></h1>
@@ -398,7 +429,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   <a href="/" data-nav>HOME</a>
 </nav>
 
-<div class="ui" id="hint">スクロールして探す<br><span>Scroll to Explore</span></div>
+<div class="ui" id="hint">スクロールして探す<br><span>ピンチで全体を見渡す</span></div>
 
 <div class="ui" id="seen">
   <span id="seenText">0 / 0 を見た</span>
@@ -408,6 +439,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 
 <div id="scrollbar"><i></i></div>
 <button id="toTop" aria-label="上へ戻る">↑</button>
+<div id="zoomctl">
+  <button id="zoomOut" aria-label="縮小">−</button>
+  <button id="zoomFit">鳥瞰</button>
+  <button id="zoomIn" aria-label="拡大">＋</button>
+</div>
 
 <button class="ui" id="listbtn"><span class="bars"><i></i><i></i><i></i></span>ALL LIST</button>
 
@@ -489,7 +525,8 @@ const CARD = {
 /* 画面端の余白（ヘッダーや下部ドックにカードが隠れない距離） */
 const EDGE = { top:150, bottom:150, side:40, topSP:96, bottomSP:96, sideSP:16 };
 
-const stage = $("#stage"), grid = $("#grid");
+const stage = $("#stage"), grid = $("#grid"), canvas = $("#canvas");
+let zoom = 1, minZoom = 0.3, natW = 0, natH = 0, padTop = 150, padBottom = 150;   // 表示倍率とボードの実寸
 let CW, CH, tiles=[], boardW=0, boardH=0;
 let dragging=false, moved=0, lastX=0, lastY=0, downCard=null;
 let activeFilter = null;
@@ -535,7 +572,7 @@ function groupThemes(list){
 
 function buildBoard(keepPos){
   const sx=keepPos?stage.scrollLeft:0, sy=keepPos?stage.scrollTop:0;
-  grid.innerHTML=""; tiles=[];
+  canvas.innerHTML=""; tiles=[];
   const vw=stage.clientWidth||innerWidth, vh=stage.clientHeight||innerHeight, narrow=vw<760;
   const gap   = narrow?Math.round(CARD.gap*0.7):CARD.gap;
   // ヘッダー（ロゴ・理念・リード文）の実際の高さぶんだけ空ける。
@@ -572,7 +609,7 @@ function buildBoard(keepPos){
     panel._x = cx; panel._y = cy;
     panel.innerHTML = `<span class="clabel" style="color:${tint}">${g.name}`+
       `<i class="ccount">${g.items.length}</i></span>`;
-    grid.appendChild(panel);
+    canvas.appendChild(panel);
 
     g.items.forEach((t,i)=>{
       const c=i%cols, r=(i/cols)|0;
@@ -593,7 +630,7 @@ function buildBoard(keepPos){
           `<h3 class="card__title">${t.title}</h3>`+
           (t.status?`<span class="card__status">${t.status}</span>`:"")+
         `</div>`;
-      grid.appendChild(el);
+      canvas.appendChild(el);
       tiles.push({el, theme:t});
     });
 
@@ -608,19 +645,97 @@ function buildBoard(keepPos){
   boardH = Math.max(0, cy - CGAP);
 
   const xOff = Math.max(mSide, Math.round((vw-boardW)/2));
-  const yOff = (boardH+mTop+mBot<=vh) ? Math.round(mTop+(vh-mTop-mBot-boardH)/2) : mTop;
-  grid.querySelectorAll(".cluster,.card").forEach(el=>{
+  const yOff = 0;   // 上の余白は canvas の位置で確保する（ズームしても一定）
+  canvas.querySelectorAll(".cluster,.card").forEach(el=>{
     el.style.transform = `translate3d(${el._x+xOff}px,${el._y+yOff}px,0)`;
   });
 
   // スクロールできる範囲＝ボードの実寸。これ以上は動かない（無限ループしない）
-  grid.style.width  = Math.max(vw, boardW+xOff*2)+"px";
-  grid.style.height = Math.max(vh, boardH+yOff+mBot)+"px";
+  natW = Math.max(vw, boardW+xOff*2);
+  natH = boardH;
+  canvas.style.width = natW+"px";
+  canvas.style.height = natH+"px";
+  canvas.style.top = mTop+"px";
+  padTop = mTop; padBottom = mBot;
+  // 全体が入る倍率＝鳥瞰ビューの引き具合（下部のタグ操作に隠れない範囲で）
+  minZoom = Math.max(0.12, Math.min(1, Math.min(vw/natW, (vh-mTop-mBot)/natH)*0.98));
+  applyZoomBox();
   stage.scrollLeft = Math.min(sx, stage.scrollWidth-stage.clientWidth);
   stage.scrollTop  = Math.min(sy, stage.scrollHeight-stage.clientHeight);
   paintSeen();
   onScroll();
 }
+
+/* ---- ズーム（ピンチ／ボタン／⌘+ホイール） ---- */
+function applyZoomBox(){
+  zoom = Math.min(1, Math.max(minZoom, zoom));
+  canvas.style.transform = `scale(${zoom})`;
+  grid.style.width  = Math.round(natW*zoom)+"px";
+  grid.style.height = Math.round(natH*zoom)+padTop+padBottom+"px";
+  document.documentElement.style.setProperty("--inv", (1/zoom).toFixed(3));
+  stage.classList.toggle("is-far", zoom < 0.62);
+  $("#zoomFit").classList.toggle("on", zoom < 0.62);
+  $("#zoomIn").disabled  = zoom >= 1;
+  $("#zoomOut").disabled = zoom <= minZoom+0.001;
+}
+function setZoom(z, fx, fy){
+  const prev = zoom;
+  z = Math.min(1, Math.max(minZoom, z));
+  if(Math.abs(z-prev) < 0.001) return;
+  const cw = stage.clientWidth, ch = stage.clientHeight;
+  fx = (fx==null?cw/2:fx); fy = (fy==null?ch/2:fy);
+  // 指（またはカーソル）の下にある一点を動かさないように巻き戻す
+  const px = (stage.scrollLeft+fx)/prev, py = (stage.scrollTop+fy)/prev;
+  zoom = z;
+  applyZoomBox();
+  stage.scrollLeft = px*z-fx;
+  stage.scrollTop  = py*z-fy;
+  onScroll();
+  closePeek();
+}
+$("#zoomIn").onclick  = ()=>setZoom(zoom*1.35);
+$("#zoomOut").onclick = ()=>setZoom(zoom/1.35);
+$("#zoomFit").onclick = ()=>{
+  if(zoom > minZoom+0.01){ setZoom(minZoom); stage.scrollTo({top:0,left:0,behavior:"smooth"}); }
+  else setZoom(1);
+};
+
+/* トラックパッドのピンチ（⌘/Ctrl+ホイール）でもズーム */
+stage.addEventListener("wheel",e=>{
+  if(!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault();
+  setZoom(zoom * (1 - e.deltaY*0.01), e.clientX, e.clientY);
+},{passive:false});
+
+/* 2本指ピンチ */
+let pinch = null;
+const dist = t => Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+const mid  = t => [(t[0].clientX+t[1].clientX)/2, (t[0].clientY+t[1].clientY)/2];
+stage.addEventListener("touchstart",e=>{
+  if(e.touches.length!==2) return;
+  const t=[e.touches[0],e.touches[1]];
+  pinch = {d:dist(t), z:zoom};
+  cancel();          // ドラッグ扱いを解除（誤タップ防止）
+  closePeek();
+},{passive:true});
+stage.addEventListener("touchmove",e=>{
+  if(!pinch || e.touches.length!==2) return;
+  e.preventDefault();
+  const t=[e.touches[0],e.touches[1]];
+  const [mx,my]=mid(t);
+  setZoom(pinch.z * dist(t)/pinch.d, mx, my);
+},{passive:false});
+stage.addEventListener("touchend",()=>{ if(pinch) pinch=null; },{passive:true});
+
+/* iOS Safari / LINE内ブラウザのピンチ（ページ拡大を止めて自前でズーム） */
+["gesturestart","gesturechange","gestureend"].forEach(ev=>{
+  stage.addEventListener(ev, e=>{
+    e.preventDefault();
+    if(ev==="gesturestart"){ pinch={d:1, z:zoom}; closePeek(); }
+    else if(ev==="gesturechange" && pinch) setZoom(pinch.z*e.scale);
+    else pinch=null;
+  });
+});
 
 /* 右端の位置インジケータ / 「上へ」ボタン */
 function onScroll(){
