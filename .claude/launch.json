@@ -2,16 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "mirai-wakayama-gikai (Next.js dev)",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "mirai-wakayama-gikai"],
-      "port": 3000
-    },
-    {
-      "name": "mirai-wakayama-gikai-admin (Next.js dev)",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "mirai-wakayama-gikai-admin"],
-      "port": 3001
+      "name": "seisaku-themes",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4321", "--directory", "seisaku-themes/dist"],
+      "port": 4321
     }
   ]
 }
