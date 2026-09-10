@@ -52,6 +52,9 @@ export default async function MapPage({
       canEdit={canEdit}
       headerRight={
         <>
+          <Link href={`/m/${mapId}/report`} className="btn secondary small">
+            相談書を作成
+          </Link>
           {role === "owner" && (
             <Link href={`/m/${mapId}/share`} className="btn secondary small">
               共有・メンバー

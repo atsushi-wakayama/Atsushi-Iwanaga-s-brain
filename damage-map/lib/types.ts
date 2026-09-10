@@ -23,6 +23,8 @@ export type Photo = {
   file_name: string | null;
   width: number | null;
   height: number | null;
+  /** 案件ごとの通し番号。相談書の写真番号と地図のピン番号はこれで一致する */
+  seq: number | null;
   created_by: string | null;
   created_at: string;
 };

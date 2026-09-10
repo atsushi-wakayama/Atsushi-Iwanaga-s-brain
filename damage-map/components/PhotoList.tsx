@@ -162,6 +162,9 @@ export default function PhotoList({
                 )}
                 <div className="card-body">
                   <div className="card-top">
+                    {photo.seq !== null && (
+                      <span className="seq-badge">No.{photo.seq}</span>
+                    )}
                     <span className="tag" style={{ background: cat.color }}>
                       {cat.label}
                     </span>

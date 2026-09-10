@@ -62,11 +62,13 @@ create table if not exists public.photos (
   file_name  text,
   width      integer,
   height     integer,
+  seq        integer,
   created_by uuid references auth.users (id) on delete set null,
   created_at timestamptz not null default now()
 );
 
 create index if not exists photos_map_id_idx        on public.photos (map_id, created_at desc);
+create unique index if not exists photos_map_seq_idx    on public.photos (map_id, seq);
 create index if not exists map_members_user_id_idx  on public.map_members (user_id);
 create index if not exists map_invites_email_idx    on public.map_invites (lower(email));
 create index if not exists share_links_map_id_idx   on public.share_links (map_id);
@@ -137,6 +139,29 @@ drop trigger if exists on_map_created on public.maps;
 create trigger on_map_created
   after insert on public.maps
   for each row execute function public.handle_new_map();
+
+-- 写真に案件ごとの通し番号を振る。
+-- 相談書・陳情書の写真番号と地図上のピン番号を一致させるため、
+-- 登録時に確定させて以後変えない。
+create or replace function public.assign_photo_seq()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.seq is null then
+    select coalesce(max(seq), 0) + 1 into new.seq
+      from public.photos where map_id = new.map_id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_photo_seq on public.photos;
+create trigger on_photo_seq
+  before insert on public.photos
+  for each row execute function public.assign_photo_seq();
 
 -- ログイン後に、自分のメールアドレス宛の招待をメンバーシップへ変換する
 create or replace function public.claim_invites()
