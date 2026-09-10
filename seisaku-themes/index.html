@@ -54,7 +54,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 #stage.dragging{cursor:grabbing}
 #grid{position:relative;width:100%;height:100%}
 #stage::before,#stage::after{content:"";position:fixed;left:0;right:0;height:150px;z-index:5;pointer-events:none}
-#stage::before{top:0;background:linear-gradient(to bottom,#fff 14%,rgba(255,255,255,.8) 48%,rgba(255,255,255,0))}
+#stage::before{top:0;height:var(--scrim-top,150px);background:linear-gradient(to bottom,#fff 62%,rgba(255,255,255,.92) 82%,rgba(255,255,255,0))}
 #stage::after{bottom:0;background:linear-gradient(to top,#fff 12%,rgba(255,255,255,.8) 48%,rgba(255,255,255,0))}
 
 /* カードの色分けは従来どおり（テーマごとの色を維持） */
@@ -136,7 +136,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
   max-width:330px;margin:16px 0 0;font-family:var(--serif);font-weight:700;
   font-size:15px;line-height:1.75;color:var(--green);letter-spacing:.02em;
 }
-#brand .lead{max-width:330px;margin:10px 0 0;font-size:12.5px;line-height:1.95;color:var(--muted)}
+#brand .lead{max-width:340px;margin:9px 0 0;font-size:12px;line-height:1.85;color:var(--muted)}
 
 /* ナビゲーション：緑のアンダーライン */
 #nav{top:0;right:0;padding:34px 34px;display:flex;gap:26px;font-size:12.5px;letter-spacing:.12em;font-weight:500}
@@ -173,7 +173,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 
 /* スクロール位置（どこを見ているか） */
 #scrollbar{
-  position:fixed;right:10px;top:150px;bottom:150px;width:4px;z-index:18;
+  position:fixed;right:10px;top:var(--scrim-top,150px);bottom:150px;width:4px;z-index:18;
   border-radius:999px;background:var(--line);opacity:0;transition:opacity .35s var(--ease);pointer-events:none;
 }
 #scrollbar.on{opacity:1}
@@ -502,7 +502,11 @@ function buildBoard(keepPos){
   grid.innerHTML=""; tiles=[];
   const vw=stage.clientWidth||innerWidth, vh=stage.clientHeight||innerHeight, narrow=vw<760;
   const gap   = narrow?Math.round(CARD.gap*0.7):CARD.gap;
-  const mTop  = narrow?EDGE.topSP:EDGE.top;
+  // ヘッダー（ロゴ・理念・リード文）の実際の高さぶんだけ空ける。
+  // 文章量が変わってもカードに重ならないよう毎回測り直す。
+  const brandH = Math.ceil($("#brand").getBoundingClientRect().bottom) + (narrow?16:24);
+  const mTop  = Math.max(narrow?EDGE.topSP:EDGE.top, brandH);
+  document.documentElement.style.setProperty("--scrim-top", mTop+"px");
   const mBot  = narrow?EDGE.bottomSP:EDGE.bottom;
   const mSide = narrow?EDGE.sideSP:EDGE.side;
   const list  = shownThemes();
