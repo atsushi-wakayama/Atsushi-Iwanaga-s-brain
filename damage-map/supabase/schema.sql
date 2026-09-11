@@ -54,6 +54,7 @@ create table if not exists public.photos (
   id         uuid primary key default gen_random_uuid(),
   map_id     uuid not null references public.maps (id) on delete cascade,
   image_path text not null,
+  thumb_path text,
   lat        double precision,
   lng        double precision,
   category   text not null default 'other' check (category in ('road', 'slide', 'tree', 'flood', 'other')),

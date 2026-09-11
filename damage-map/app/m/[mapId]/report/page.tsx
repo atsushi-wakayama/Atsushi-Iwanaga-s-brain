@@ -19,19 +19,16 @@ export default async function ReportPage({
   } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/m/${mapId}/report`);
 
-  const { data: map } = await supabase
-    .from("maps")
-    .select("*")
-    .eq("id", mapId)
-    .maybeSingle();
-  if (!map) notFound();
-
   // 書類の写真番号は地図のピン番号と一致させるため、通し番号順に並べる
-  const { data: photos } = await supabase
-    .from("photos")
-    .select("*")
-    .eq("map_id", mapId)
-    .order("seq", { ascending: true, nullsFirst: false });
+  const [{ data: map }, { data: photos }] = await Promise.all([
+    supabase.from("maps").select("*").eq("id", mapId).maybeSingle(),
+    supabase
+      .from("photos")
+      .select("*")
+      .eq("map_id", mapId)
+      .order("seq", { ascending: true, nullsFirst: false }),
+  ]);
+  if (!map) notFound();
 
   const withUrls = await withSignedUrls(supabase, (photos ?? []) as Photo[]);
 

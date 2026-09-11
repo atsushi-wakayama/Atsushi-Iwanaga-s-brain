@@ -5,6 +5,8 @@ import { CATEGORY_KEYS, CATEGORIES, type CategoryKey } from "@/lib/categories";
 
 export type DraftResult = {
   blob: Blob;
+  /** 一覧表示用の軽い画像 */
+  thumbBlob: Blob;
   width: number;
   height: number;
   lat: number | null;
@@ -28,6 +30,7 @@ type Draft = {
 type Stroke = { color: string; points: { x: number; y: number }[] };
 
 const MAX_WIDTH = 1200;
+const THUMB_WIDTH = 400;
 const PEN_COLORS = ["#23281F", "#B8461D", "#37647F"];
 
 /** Exif の向きを反映しつつ、長辺を MAX_WIDTH に収めた canvas を作る */
@@ -189,16 +192,31 @@ export default function PhotoEditorModal({
     ctx.drawImage(baseCanvasRef.current, 0, 0);
     if (canvasRef.current) ctx.drawImage(canvasRef.current, 0, 0);
 
-    const blob = await new Promise<Blob | null>((resolve) =>
-      composite.toBlob(resolve, "image/jpeg", 0.85),
-    );
-    if (!blob) {
+    // 一覧用に縮小したものも作る。原寸を88px枠に読ませると写真が増えるほど重くなる
+    const thumb = document.createElement("canvas");
+    const thumbScale = Math.min(1, THUMB_WIDTH / draft.width);
+    thumb.width = Math.round(draft.width * thumbScale);
+    thumb.height = Math.round(draft.height * thumbScale);
+    thumb
+      .getContext("2d")!
+      .drawImage(composite, 0, 0, thumb.width, thumb.height);
+
+    const [blob, thumbBlob] = await Promise.all([
+      new Promise<Blob | null>((resolve) =>
+        composite.toBlob(resolve, "image/jpeg", 0.85),
+      ),
+      new Promise<Blob | null>((resolve) =>
+        thumb.toBlob(resolve, "image/jpeg", 0.7),
+      ),
+    ]);
+    if (!blob || !thumbBlob) {
       setSaving(false);
       return;
     }
 
     onSave({
       blob,
+      thumbBlob,
       width: draft.width,
       height: draft.height,
       lat: draft.lat,
