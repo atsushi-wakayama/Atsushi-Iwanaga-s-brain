@@ -48,9 +48,9 @@ export default function MapWorkspace({
 
   const center: [number, number] = [map.center_lat, map.center_lng];
 
-  function enqueue(fileList: FileList | null) {
-    if (!fileList?.length) return;
-    setQueue((q) => [...q, ...Array.from(fileList)]);
+  function enqueue(files: File[]) {
+    if (files.length === 0) return;
+    setQueue((q) => [...q, ...files]);
   }
 
   async function handleSave(result: DraftResult) {
@@ -233,8 +233,11 @@ export default function MapWorkspace({
                 capture="environment"
                 className="visually-hidden"
                 onChange={(e) => {
-                  enqueue(e.target.files);
+                  // input.value を消すと同じ FileList がその場で空になる。
+                  // setQueue の更新関数は後から動くので、先に配列へ写しておく。
+                  const files = Array.from(e.target.files ?? []);
                   e.target.value = "";
+                  enqueue(files);
                 }}
               />
               <input
@@ -244,8 +247,11 @@ export default function MapWorkspace({
                 multiple
                 className="visually-hidden"
                 onChange={(e) => {
-                  enqueue(e.target.files);
+                  // input.value を消すと同じ FileList がその場で空になる。
+                  // setQueue の更新関数は後から動くので、先に配列へ写しておく。
+                  const files = Array.from(e.target.files ?? []);
                   e.target.value = "";
+                  enqueue(files);
                 }}
               />
               <label htmlFor="pick-input" className="btn desktop-only">
