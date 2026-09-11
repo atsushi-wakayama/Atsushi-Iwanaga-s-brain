@@ -51,6 +51,7 @@ export default function PhotoList({
   sort,
   onSortChange,
   onDelete,
+  onEdit,
   canEdit,
 }: {
   photos: PhotoWithUrl[];
@@ -62,6 +63,7 @@ export default function PhotoList({
   sort: SortKey;
   onSortChange: (sort: SortKey) => void;
   onDelete?: (id: string) => void;
+  onEdit?: (id: string) => void;
   canEdit: boolean;
 }) {
   const counts = CATEGORY_KEYS.reduce(
@@ -188,26 +190,37 @@ export default function PhotoList({
                   </span>
                 </div>
               </button>
-              {canEdit && onDelete && (
-                <button
-                  type="button"
-                  aria-label="この写真を削除"
-                  onClick={() => onDelete(photo.id)}
+              {canEdit && (
+                <div
                   style={{
                     position: "absolute",
                     top: 6,
                     right: 6,
-                    border: "1px solid var(--rule)",
-                    background: "var(--white)",
-                    color: "var(--ink-soft)",
-                    fontSize: 11,
-                    lineHeight: 1,
-                    padding: "4px 6px",
-                    cursor: "pointer",
+                    display: "flex",
+                    gap: 4,
                   }}
                 >
-                  削除
-                </button>
+                  {onEdit && (
+                    <button
+                      type="button"
+                      aria-label="この写真を編集"
+                      onClick={() => onEdit(photo.id)}
+                      className="card-action"
+                    >
+                      編集
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      type="button"
+                      aria-label="この写真を削除"
+                      onClick={() => onDelete(photo.id)}
+                      className="card-action"
+                    >
+                      削除
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           );

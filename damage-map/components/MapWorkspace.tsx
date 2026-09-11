@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CATEGORIES, CATEGORY_KEYS, type CategoryKey } from "@/lib/categories";
 import type { DamageMap, PhotoWithUrl } from "@/lib/types";
+import PhotoEditDialog from "./PhotoEditDialog";
 import PhotoEditorModal, { type DraftResult } from "./PhotoEditorModal";
 import PhotoList, { sortPhotos, type SortKey } from "./PhotoList";
 
@@ -35,11 +36,10 @@ export default function MapWorkspace({
     new Set(CATEGORY_KEYS),
   );
   const [sort, setSort] = useState<SortKey>("taken_desc");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const pickInput = useRef<HTMLInputElement>(null);
-  const cameraInput = useRef<HTMLInputElement>(null);
 
   const visiblePhotos = useMemo(
     () => sortPhotos(photos.filter((p) => activeCategories.has(p.category)), sort),
@@ -138,6 +138,32 @@ export default function MapWorkspace({
     if (updateError) setError(updateError.message);
   }
 
+  async function handleUpdate(
+    id: string,
+    values: { category: CategoryKey; caption: string },
+  ) {
+    const previous = photos;
+    setPhotos((prev) =>
+      prev.map((p) =>
+        p.id === id
+          ? { ...p, category: values.category, caption: values.caption || null }
+          : p,
+      ),
+    );
+    setEditingId(null);
+
+    const { error: updateError } = await supabase
+      .from("photos")
+      .update({ category: values.category, caption: values.caption || null })
+      .eq("id", id);
+
+    if (updateError) {
+      // 保存できなかったら画面を元に戻す
+      setPhotos(previous);
+      setError(updateError.message);
+    }
+  }
+
   async function handleDelete(id: string) {
     const target = photos.find((p) => p.id === id);
     if (!target) return;
@@ -145,6 +171,7 @@ export default function MapWorkspace({
 
     setPhotos((prev) => prev.filter((p) => p.id !== id));
     setPendingLocation((prev) => prev.filter((p) => p.id !== id));
+    setEditingId((current) => (current === id ? null : current));
     const { error: deleteError } = await supabase
       .from("photos")
       .delete()
@@ -175,6 +202,7 @@ export default function MapWorkspace({
   }
 
   const placedCount = photos.filter((p) => p.lat !== null).length;
+  const editingPhoto = photos.find((p) => p.id === editingId) ?? null;
 
   return (
     <div className="workspace">
@@ -193,35 +221,36 @@ export default function MapWorkspace({
           </span>
           {canEdit && (
             <>
+              {/*
+                入力欄は hidden（display:none）にすると iOS Safari で
+                JS からの click() が効かないことがある。画面外に置いたうえで
+                label から開かせると、どの端末でも確実に反応する。
+              */}
               <input
-                ref={cameraInput}
+                id="camera-input"
                 type="file"
                 accept="image/*"
                 capture="environment"
-                hidden
+                className="visually-hidden"
                 onChange={(e) => {
                   enqueue(e.target.files);
                   e.target.value = "";
                 }}
               />
               <input
-                ref={pickInput}
+                id="pick-input"
                 type="file"
                 accept="image/*"
                 multiple
-                hidden
+                className="visually-hidden"
                 onChange={(e) => {
                   enqueue(e.target.files);
                   e.target.value = "";
                 }}
               />
-              <button
-                type="button"
-                className="btn desktop-only"
-                onClick={() => pickInput.current?.click()}
-              >
+              <label htmlFor="pick-input" className="btn desktop-only">
                 写真をアップロード
-              </button>
+              </label>
             </>
           )}
           {headerRight}
@@ -282,6 +311,7 @@ export default function MapWorkspace({
             sort={sort}
             onSortChange={setSort}
             onDelete={canEdit ? handleDelete : undefined}
+            onEdit={canEdit ? setEditingId : undefined}
             canEdit={canEdit}
           />
         </aside>
@@ -289,21 +319,29 @@ export default function MapWorkspace({
 
       {canEdit && (
         <div className="mobile-actions">
-          <button
-            type="button"
-            className="btn"
-            onClick={() => cameraInput.current?.click()}
-          >
+          <label htmlFor="camera-input" className="btn">
             写真を撮る
-          </button>
-          <button
-            type="button"
-            className="btn secondary"
-            onClick={() => pickInput.current?.click()}
-          >
+          </label>
+          <label htmlFor="pick-input" className="btn secondary">
             写真を選ぶ
-          </button>
+          </label>
         </div>
+      )}
+
+      {canEdit && editingPhoto && (
+        <PhotoEditDialog
+          photo={editingPhoto}
+          onClose={() => setEditingId(null)}
+          onSave={(values) => handleUpdate(editingPhoto.id, values)}
+          onRelocate={() => {
+            // 地図クリック待ちの先頭に入れて、そのまま指定してもらう
+            setPendingLocation((prev) => [
+              editingPhoto,
+              ...prev.filter((p) => p.id !== editingPhoto.id),
+            ]);
+            setEditingId(null);
+          }}
+        />
       )}
 
       {canEdit && queue.length > 0 && (
