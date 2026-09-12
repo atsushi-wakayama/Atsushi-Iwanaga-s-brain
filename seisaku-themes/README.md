@@ -124,6 +124,20 @@ const CARD = {
 `ratio` が縦横比。1.30 が初期の縦長、現在は **1.04**（縦を約80%に短縮）。
 グリッドの列数・行数は画面サイズから自動計算されるので、他をいじる必要はない。
 
+## 画像を作る
+
+```bash
+python3 make-ogp.py      # SNSカード画像（OGP）を生成 → images/ogp.png, images/ogp/<id>.png
+python3 make-mockup.py   # サイト紹介用モックアップを生成 → mockup/
+```
+
+- `make-ogp.py` … data.js を読んで、サイト共通＋**テーマごと**のOGP画像（1200×630）を作ります。
+  テーマを追加したら再実行 → `node build.js` で各ページの `og:image` に反映されます
+- `make-mockup.py` … ローカル配信中のサイトを Chrome で撮影し、ブラウザ枠・端末枠を付けた
+  紹介用画像（`mockup/sheet.png` ほか）を作ります。先に `node build.js` とローカルサーバーが必要です
+
+どちらも macOS のヒラギノフォントと Pillow を使います（`pip3 install pillow`）。
+
 ## 動かす / 公開する
 
 ローカル確認（このリポジトリのルートで）:

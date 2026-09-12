@@ -840,7 +840,7 @@ const THEMES = [
 /* サイト全体の表記 */
 const SITE = {
   url: "https://seisaku-themes.vercel.app", // 公開URL（OGP・sitemapに使う）
-  ogImage: "",                              // SNSカードの画像。例 "images/ogp.png"（無ければ文字だけのカードになる）
+  ogImage: "images/ogp.png",                // SNSカードの共通画像（make-ogp.py が生成）
   name: "政策のいま",
   nameEn: "Policy Issues of Atsushi Iwanaga",
   owner: "岩永淳志",

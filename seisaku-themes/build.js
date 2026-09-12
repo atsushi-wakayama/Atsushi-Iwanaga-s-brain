@@ -38,6 +38,8 @@ const trim = (v, n) => {
 const absURL = (u) => (!u ? "" : /^https?:/.test(u) ? u : BASE + (u[0] === "/" ? u : "/" + u));
 
 /* ---- <head> ---- */
+const ogpFor = (id) =>
+  id && fs.existsSync(path.join(SRC, "images", "ogp", `${id}.png`)) ? `images/ogp/${id}.png` : "";
 function head({ title, desc, url, image }) {
   const img = absURL(image || SITE.ogImage || "");
   return [
@@ -115,7 +117,7 @@ for (const t of THEMES) {
         title: `${t.title}｜${SITE.name}`,
         desc: trim(t.summary || t.issue, 150),
         url: `${BASE}/t/${t.id}`,
-        image: t.image,
+        image: ogpFor(t.id) || t.image,   // テーマ別のOGP画像（make-ogp.py で生成）
       }),
       preTheme(t)
     )

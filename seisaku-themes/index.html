@@ -519,7 +519,7 @@ const CARD = {
   ratio: 1.04,     // 高さ = 幅 × この値
   gap: 22,         // カード同士の間隔(px)
   clusterCols: 3,    // 分野の島の中に並べる列数（PC）
-  clustersPerRow: 3, // 横に並べる島の数（PC）
+  // 横に並べる島の数は、画面サイズに合わせて自動で決まります
   mobileCols: 2,     // スマホでの列数
 };
 /* 画面端の余白（ヘッダーや下部ドックにカードが隠れない距離） */
@@ -587,12 +587,38 @@ function buildBoard(keepPos){
                               : groupThemes(shownThemes());
 
   const gCols  = narrow?CARD.mobileCols:CARD.clusterCols;   // 島の中の列数
-  const perRow = narrow?1:CARD.clustersPerRow;              // 横に並べる島の数
   const PAD    = {x: narrow?12:18, top: narrow?46:54, bottom: narrow?12:18};
   const CGAP   = narrow?24:44;                              // 島どうしの間隔
 
   CW = narrow ? Math.round((vw - mSide*2 - PAD.x*2 - gap*(gCols-1))/gCols) : CARD.width;
   CH = Math.round(CW*CARD.ratio);
+
+  // 島の寸法をあらかじめ計算し、画面にいちばんきれいに収まる段組みを選ぶ
+  const dims = groups.map(g=>{
+    const cols = Math.max(1, Math.min(gCols, g.items.length));
+    const rows = Math.ceil(g.items.length/cols);
+    return {cols, rows,
+            w: cols*(CW+gap)-gap + PAD.x*2,
+            h: rows*(CH+gap)-gap + PAD.top + PAD.bottom};
+  });
+  const measure = per=>{
+    let x=0, y=0, rh=0, W=0;
+    dims.forEach((d,i)=>{
+      W = Math.max(W, x+d.w); rh = Math.max(rh, d.h);
+      if((i+1)%per===0 || i===dims.length-1){ y += rh+CGAP; x = 0; rh = 0; }
+      else x += d.w + CGAP;
+    });
+    return {W, H: Math.max(0, y-CGAP)};
+  };
+  let perRow = 1;
+  if(!narrow){
+    let best = -1;
+    for(let per=1; per<=dims.length; per++){
+      const {W,H} = measure(per);
+      const fit = Math.min((vw-mSide*2)/W, (vh-mTop-mBot)/H);   // 全体表示したときの大きさ
+      if(fit > best){ best = fit; perRow = per; }
+    }
+  }
 
   let cx=0, cy=0, rowH=0, n=0;
   boardW=0;
@@ -979,6 +1005,7 @@ $("#seenReset").onclick = (e)=>{
 };
 buildBoard(false);
 route();
+if(/(\?|&)view=all\b/.test(location.search)) setZoom(minZoom);   // 鳥瞰で開くリンク用
 let rt; addEventListener("resize",()=>{
   if(currentId){
     const W=innerWidth||document.documentElement.clientWidth, H=innerHeight||document.documentElement.clientHeight;
