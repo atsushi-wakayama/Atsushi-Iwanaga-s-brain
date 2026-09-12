@@ -34,6 +34,66 @@ const FIELDS = {
 };
 const LIST_FIELDS = new Set(["actions"]);
 
+/* ---- 分野の言い換え（フォームの自由記述を、サイトの分野に寄せる） ---- */
+const TAG_ALIAS = {
+  "産業":"産業・雇用","産業振興":"産業・雇用","雇用":"産業・雇用","商工":"産業・雇用",
+  "観光":"産業・雇用","起業":"産業・雇用","経済":"産業・雇用",
+  "地域":"地域づくり","地域活性化":"地域づくり","まちづくり":"地域づくり","文化":"地域づくり",
+  "移住":"地域づくり","関係人口":"地域づくり",
+  "防災":"防災・インフラ","減災":"防災・インフラ","インフラ":"防災・インフラ","災害":"防災・インフラ",
+  "教育":"子育て・教育","子育て":"子育て・教育","学校":"子育て・教育",
+  "医療":"医療・福祉","福祉":"医療・福祉","介護":"医療・福祉","健康":"医療・福祉",
+  "農業":"農林水産","林業":"農林水産","水産":"農林水産","漁業":"農林水産","農林水産業":"農林水産",
+  "環境":"環境・エネルギー","エネルギー":"環境・エネルギー","脱炭素":"環境・エネルギー",
+  "行政":"行財政改革","行財政":"行財政改革","財政":"行財政改革","DX":"行財政改革","デジタル":"行財政改革",
+  "公共交通":"交通","道路":"交通",
+};
+function normalizeTags(raw, CATEGORIES, warn, where){
+  const out = [];
+  const push = v => { if(v && !out.includes(v)) out.push(v); };
+  String(raw||"").split(/[\/、,，|]/).map(s=>s.trim()).filter(Boolean).forEach(part=>{
+    if(CATEGORIES.includes(part)) return push(part);
+    if(TAG_ALIAS[part]){ warn(`${where}: 分野「${part}」を「${TAG_ALIAS[part]}」として登録しました`); return push(TAG_ALIAS[part]); }
+    // 「産業振興・地域活性化」のように ・ でつながっている場合は分解して照合
+    const parts = part.split("・").map(s=>s.trim()).filter(Boolean);
+    if(parts.length>1 && parts.every(x=>CATEGORIES.includes(x)===false && TAG_ALIAS[x])){
+      warn(`${where}: 分野「${part}」を「${parts.map(x=>TAG_ALIAS[x]).join(" / ")}」として登録しました`);
+      return parts.forEach(x=>push(TAG_ALIAS[x]));
+    }
+    push(part);   // どれにも当てはまらなければそのまま（新しい島が増える）
+  });
+  return out;
+}
+
+/* ---- 表（Googleフォームの回答シート）の読み込み ---- */
+function parseTable(text){
+  const rows = [];
+  const lines = text.split(/\r?\n/).filter(l=>l.trim() && !/^\s*#/.test(l));
+  if(!lines.length) return rows;
+  const sep = lines[0].includes("\t") ? "\t" : ",";
+  const split = line => sep==="\t" ? line.split("\t")
+    : (line.match(/("([^"]|"")*"|[^,]*)(,|$)/g)||[]).map(c=>c.replace(/,$/,"").replace(/^"|"$/g,"").replace(/""/g,'"'));
+  const header = split(lines[0]).map(h=>h.trim());
+  for(const line of lines.slice(1)){
+    const cells = split(line);
+    const o = {};
+    header.forEach((h,i)=>{
+      const v = (cells[i]||"").trim();
+      if(!v) return;
+      if(/タイムスタンプ|timestamp/i.test(h)){ o._ts = v; return; }
+      const key = FIELDS[h];
+      if(!key) return;
+      o[key] = LIST_FIELDS.has(key) ? v.split(/\r?\n|・|;|；/).map(s=>s.replace(/^[-*\s]+/,"").trim()).filter(Boolean) : v;
+    });
+    if(o.title || o.id) rows.push(o);
+  }
+  return rows;
+}
+const looksLikeTable = text => {
+  const first = text.split(/\r?\n/).find(l=>l.trim() && !/^\s*#/.test(l)) || "";
+  return /テーマ名/.test(first) && (first.includes("\t") || first.split(",").length>3);
+};
+
 function parse(text){
   const blocks = text.split(/^[-=]{3,}\s*$/m);
   const items = [];
@@ -75,7 +135,8 @@ const existing = new Set(THEMES.map(t => t.id));
 if(!fs.existsSync(path.join(SRC, input))){
   console.error(`✗ ${input} が見つかりません`); process.exit(1);
 }
-const items = parse(fs.readFileSync(path.join(SRC, input), "utf8"));
+const text  = fs.readFileSync(path.join(SRC, input), "utf8");
+const items = looksLikeTable(text) ? parseTable(text) : parse(text);
 if(!items.length){ console.log("記入されたテーマがありません。"); process.exit(0); }
 
 const errors = [], warns = [], ok = [];
@@ -84,8 +145,13 @@ items.forEach((o, n) => {
   if(!o.title) errors.push(`${where}: テーマ名がありません`);
   if(!o.summary) errors.push(`${where}: 概要がありません`);
   if(!o.tags) errors.push(`${where}: 分野がありません`);
-  o.tags = (o.tags || "").split(/[\/、,・]/).map(s => s.trim()).filter(Boolean);
+  o.tags = normalizeTags(o.tags, CATEGORIES, m=>warns.push(m), where);
   o.tags.forEach(t => { if(!CATEGORIES.includes(t)) warns.push(`${where}: 「${t}」はカテゴリ一覧にない分野です（新しい島が増えます）`); });
+  if(!o.updated && o._ts){
+    const m2 = o._ts.match(/(\d{4})[\/-](\d{1,2})/);
+    if(m2){ o.updated = `${m2[1]}-${String(m2[2]).padStart(2,"0")}`; warns.push(`${where}: 更新を回答日時から「${o.updated}」としました`); }
+  }
+  delete o._ts;
   if(!o.id){
     o.id = "theme-" + (o.updated || "").replace("-","") + "-" + (n+1);
     warns.push(`${where}: IDが空なので「${o.id}」を割り当てました`);
