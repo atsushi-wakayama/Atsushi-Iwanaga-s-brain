@@ -99,11 +99,15 @@ function parse(text){
   const items = [];
   for(const raw of blocks){
     const lines = raw.split(/\r?\n/).filter(l => !/^\s*#/.test(l));
-    const obj = {}; let key = null;
+    let obj = {}; let key = null;
     for(const line of lines){
       const m = line.match(/^\s*([^:：]{1,12})\s*[:：]\s*(.*)$/);
       if(m && FIELDS[m[1].trim()]){
         key = FIELDS[m[1].trim()];
+        // 区切り行（----）が無くても、新しい ID: が出たら別テーマとして扱う
+        if(key === "id" && (obj.id || obj.title)){
+          items.push(obj); obj = {};
+        }
         const v = m[2].trim();
         obj[key] = LIST_FIELDS.has(key) ? (v ? [v] : []) : v;
         continue;

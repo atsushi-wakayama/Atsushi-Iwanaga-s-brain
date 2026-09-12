@@ -578,7 +578,8 @@ function buildBoard(keepPos){
   // ヘッダー（ロゴ・理念・リード文）の実際の高さぶんだけ空ける。
   // 文章量が変わってもカードに重ならないよう毎回測り直す。
   const brandH = Math.ceil($("#brand").getBoundingClientRect().bottom) + (narrow?16:24);
-  const mTop  = Math.max(narrow?EDGE.topSP:EDGE.top, brandH);
+  // 画面が低いときはヘッダーに場所を取られすぎないよう上限をかける
+  const mTop  = Math.min(Math.max(narrow?EDGE.topSP:EDGE.top, brandH), Math.round(vh*0.45));
   document.documentElement.style.setProperty("--scrim-top", mTop+"px");
   const mBot  = narrow?EDGE.bottomSP:EDGE.bottom;
   const mSide = narrow?EDGE.sideSP:EDGE.side;
@@ -601,6 +602,7 @@ function buildBoard(keepPos){
             w: cols*(CW+gap)-gap + PAD.x*2,
             h: rows*(CH+gap)-gap + PAD.top + PAD.bottom};
   });
+  const availH = Math.max(200, vh - mTop - mBot);   // 鳥瞰で使える高さ
   const measure = per=>{
     let x=0, y=0, rh=0, W=0;
     dims.forEach((d,i)=>{
@@ -615,7 +617,7 @@ function buildBoard(keepPos){
     let best = -1;
     for(let per=1; per<=dims.length; per++){
       const {W,H} = measure(per);
-      const fit = Math.min((vw-mSide*2)/W, (vh-mTop-mBot)/H);   // 全体表示したときの大きさ
+      const fit = Math.min((vw-mSide*2)/W, availH/H);   // 全体表示したときの大きさ
       if(fit > best){ best = fit; perRow = per; }
     }
   }
@@ -684,7 +686,7 @@ function buildBoard(keepPos){
   canvas.style.top = mTop+"px";
   padTop = mTop; padBottom = mBot;
   // 全体が入る倍率＝鳥瞰ビューの引き具合（下部のタグ操作に隠れない範囲で）
-  minZoom = Math.max(0.12, Math.min(1, Math.min(vw/natW, (vh-mTop-mBot)/natH)*0.98));
+  minZoom = Math.max(0.12, Math.min(1, Math.min(vw/natW, availH/natH)*0.98));
   applyZoomBox();
   stage.scrollLeft = Math.min(sx, stage.scrollWidth-stage.clientWidth);
   stage.scrollTop  = Math.min(sy, stage.scrollHeight-stage.clientHeight);
@@ -722,9 +724,21 @@ function setZoom(z, fx, fy){
 $("#zoomIn").onclick  = ()=>setZoom(zoom*1.35);
 $("#zoomOut").onclick = ()=>setZoom(zoom/1.35);
 $("#zoomFit").onclick = ()=>{
-  if(zoom > minZoom+0.01){ setZoom(minZoom); stage.scrollTo({top:0,left:0,behavior:"smooth"}); }
-  else setZoom(1);
+  if(zoom > minZoom+0.01){ toOverview(); }
+  else { toDetailZoom(); }
 };
+/* 鳥瞰へ：全体が入る倍率にして左上へ */
+function toOverview(){
+  setZoom(minZoom);
+  stage.scrollLeft = 0; stage.scrollTop = 0;
+  onScroll();
+}
+/* 鳥瞰から戻る：等倍にして必ず左上（1枚目のカード）へ戻す。迷子防止 */
+function toDetailZoom(){
+  setZoom(1, 0, 0);
+  stage.scrollLeft = 0; stage.scrollTop = 0;
+  onScroll();
+}
 
 /* トラックパッドのピンチ（⌘/Ctrl+ホイール）でもズーム */
 stage.addEventListener("wheel",e=>{
@@ -751,7 +765,12 @@ stage.addEventListener("touchmove",e=>{
   const [mx,my]=mid(t);
   setZoom(pinch.z * dist(t)/pinch.d, mx, my);
 },{passive:false});
-stage.addEventListener("touchend",()=>{ if(pinch) pinch=null; },{passive:true});
+stage.addEventListener("touchend",()=>{
+  if(!pinch) return;
+  pinch = null;
+  // 鳥瞰から指で戻しきったときも、どこにいるか分かるよう左上に寄せる
+  if(zoom > 0.92){ stage.scrollLeft = 0; stage.scrollTop = 0; onScroll(); }
+},{passive:true});
 
 /* iOS Safari / LINE内ブラウザのピンチ（ページ拡大を止めて自前でズーム） */
 ["gesturestart","gesturechange","gestureend"].forEach(ev=>{
