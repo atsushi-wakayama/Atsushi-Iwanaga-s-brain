@@ -34,5 +34,9 @@ create policy "insert pending comments"
     and char_length(theme_id) <= 80
   );
 
+-- Data API から読み書きできるように権限を渡す（更新・削除は渡さない）
+grant usage on schema public to anon, authenticated;
+grant select, insert on public.comments to anon, authenticated;
+
 -- 更新・削除のポリシーは作らない＝一般の利用者はできない
 -- （承認はダッシュボードの Table Editor から status を approved に変える）
