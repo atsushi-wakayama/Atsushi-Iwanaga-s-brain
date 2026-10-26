@@ -126,6 +126,8 @@ for (const t of THEMES) {
 
 /* ---- そのまま配信するファイル ---- */
 fs.copyFileSync(path.join(SRC, "data.js"), path.join(OUT, "data.js"));
+if (fs.existsSync(path.join(SRC, "config.js")))
+  fs.copyFileSync(path.join(SRC, "config.js"), path.join(OUT, "config.js"));
 if (fs.existsSync(path.join(SRC, "images")))
   fs.cpSync(path.join(SRC, "images"), path.join(OUT, "images"), { recursive: true });
 

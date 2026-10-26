@@ -336,6 +336,39 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 }
 .meta b{display:block;color:var(--green);font-size:10.5px;letter-spacing:.18em;font-weight:700;margin-bottom:8px}
 
+/* ---------- コメント欄 ---------- */
+.comments{margin-top:clamp(48px,8vw,80px);padding-top:30px;border-top:1px solid var(--line)}
+.comments h2{font-size:11.5px;letter-spacing:.24em;color:var(--green);font-weight:700;margin:0 0 20px}
+.citem{padding:18px 0;border-bottom:1px dashed var(--line)}
+.citem:first-child{padding-top:0}
+.chead{display:flex;align-items:baseline;gap:12px;margin:0 0 7px}
+.cwho{font-weight:700;font-size:13px;color:var(--green-d)}
+.chead time{font-size:11px;color:var(--muted);letter-spacing:.06em}
+.cbodytext{margin:0;font-size:14.5px;line-height:1.95;white-space:pre-wrap;word-break:break-word}
+.cempty{font-size:13px;color:var(--muted);padding:4px 0 10px}
+
+#cform{margin-top:26px;background:var(--green-l);border-radius:18px;padding:20px 20px 18px;position:relative;overflow:hidden}
+#cform::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:var(--band)}
+#cform input,#cform textarea{
+  width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;
+  padding:12px 14px;font-family:var(--sans);font-size:14px;line-height:1.8;color:var(--ink);
+  margin-bottom:10px;resize:vertical;
+}
+#cform input:focus,#cform textarea:focus{outline:2px solid rgba(20,98,74,.35);outline-offset:1px;border-color:transparent}
+#cform .chp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.crow{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:space-between}
+.cnote{flex:1;min-width:220px;margin:0;font-size:11px;line-height:1.8;color:var(--muted)}
+.cbtn{
+  flex:none;background:var(--round);color:#fff;border-radius:999px;padding:12px 28px;
+  font-size:13px;font-weight:700;letter-spacing:.08em;box-shadow:0 8px 18px rgba(20,98,74,.3);
+  transition:transform .2s var(--ease), box-shadow .2s var(--ease);
+}
+.cbtn:hover{transform:translateY(-1px);box-shadow:0 12px 24px rgba(20,98,74,.38)}
+.cbtn:disabled{opacity:.5;transform:none;cursor:default}
+.cmsg{margin:12px 0 0;font-size:12.5px;line-height:1.7;min-height:1em}
+.cmsg.ok{color:var(--green)}
+.cmsg.ng{color:#9e3b3b}
+
 .related{margin-top:clamp(48px,8vw,84px)}
 .related h2{font-size:11.5px;letter-spacing:.24em;color:var(--green);margin:0 0 20px;font-weight:700}
 .rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
@@ -503,6 +536,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;font-f
 </div>
 <button id="closeList" style="display:none">×</button>
 
+<script src="/config.js"></script>
 <script src="/data.js"></script>
 <script>
 /* ============ 基本ユーティリティ ============ */
@@ -944,10 +978,12 @@ function openTheme(id, srcEl){
       (t.source?`<div><b>声のもと</b>${t.source}</div>`:"")+
       (t.updated?`<div><b>更新</b>${t.updated}</div>`:"")+
     `</div>`+
+    commentsHTML()+
     (others.length?`<div class="related"><h2>関連する課題</h2><div class="rgrid">`+
       others.map(o=>`<button class="rcard" data-go="${o.id}" style="${bgStyle(o)}"><i></i><span>${o.title}</span></button>`).join("")+
       `</div></div>`:"");
   $("#detailScroll").scrollTop=0;
+  setupComments(t.id);
 
   detail.classList.add("open"); detail.setAttribute("aria-hidden","false");
   document.documentElement.style.overflow="hidden";
@@ -985,6 +1021,106 @@ $("#dWrap").addEventListener("click",e=>{
   const b=e.target.closest("[data-go]"); if(!b) return;
   go("/t/"+b.dataset.go);
 });
+
+/* ============ コメント欄（Supabase／承認したものだけ公開） ============ */
+const CM = (typeof SUPABASE!=="undefined" && SUPABASE.url && SUPABASE.anonKey) ? SUPABASE : null;
+const CM_WAIT = 60*1000;   // 連続投稿の間隔（ミリ秒）
+
+function commentsHTML(){
+  if(!CM) return "";
+  return `<section class="comments" id="cbox">
+    <h2>この課題へのコメント</h2>
+    <div id="clist" class="cempty">読み込み中…</div>
+    <form id="cform" novalidate>
+      <input id="cname" type="text" maxlength="40" placeholder="お名前（任意・ニックネームでも）">
+      <textarea id="cbody" maxlength="1000" rows="4" placeholder="現場の実情、賛成・反対、こうしてほしいという提案など"></textarea>
+      <input id="chp" class="chp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="crow">
+        <p class="cnote">いただいたご意見は、確認のうえ公開します。すぐには表示されません。個人情報や、특定の方を傷つける内容は書かないでください。</p>
+        <button type="submit" class="cbtn">送信する</button>
+      </div>
+      <p id="cmsg" class="cmsg"></p>
+    </form>
+  </section>`;
+}
+
+function fmtDate(iso){
+  const d = new Date(iso);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+}
+
+async function setupComments(themeId){
+  if(!CM) return;
+  const list = $("#clist"), form = $("#cform"), msg = $("#cmsg");
+  if(!list || !form) return;
+
+  // 一覧を読む（承認済みのみ返ってくる）
+  try{
+    const r = await fetch(`${CM.url}/rest/v1/comments?select=id,name,body,created_at`+
+      `&theme_id=eq.${encodeURIComponent(themeId)}&status=eq.approved&order=created_at.desc&limit=100`,
+      { headers:{ apikey:CM.anonKey, Authorization:"Bearer "+CM.anonKey } });
+    const rows = r.ok ? await r.json() : [];
+    list.innerHTML = "";
+    if(!rows.length){
+      list.className = "cempty";
+      list.textContent = "まだコメントはありません。最初の一件を書いてみませんか。";
+    }else{
+      list.className = "";
+      rows.forEach(c=>{
+        const el = document.createElement("article");
+        el.className = "citem";
+        const h = document.createElement("p"); h.className = "chead";
+        const n = document.createElement("span"); n.className = "cwho";
+        n.textContent = (c.name && c.name.trim()) ? c.name.trim() : "匿名";
+        const d = document.createElement("time"); d.textContent = fmtDate(c.created_at);
+        h.append(n, d);
+        const b = document.createElement("p"); b.className = "cbodytext";
+        b.textContent = c.body;                       // textContent で入れる（HTMLとして解釈させない）
+        el.append(h, b);
+        list.appendChild(el);
+      });
+    }
+  }catch(e){
+    list.className = "cempty";
+    list.textContent = "コメントを読み込めませんでした。";
+  }
+
+  // 投稿
+  form.onsubmit = async (e)=>{
+    e.preventDefault();
+    const body = $("#cbody").value.trim();
+    const name = $("#cname").value.trim();
+    msg.className = "cmsg";
+    if($("#chp").value){ return; }                     // 自動投稿よけ
+    if(body.length < 5){ msg.textContent = "5文字以上で入力してください。"; msg.classList.add("ng"); return; }
+    let last = 0;
+    try{ last = +(localStorage.getItem("cm-last")||0); }catch(_){}
+    if(Date.now()-last < CM_WAIT){
+      msg.textContent = "続けて送信できません。少し時間をおいてください。";
+      msg.classList.add("ng"); return;
+    }
+    const btn = form.querySelector(".cbtn");
+    btn.disabled = true; btn.textContent = "送信中…";
+    try{
+      const r = await fetch(`${CM.url}/rest/v1/comments`, {
+        method:"POST",
+        headers:{ apikey:CM.anonKey, Authorization:"Bearer "+CM.anonKey,
+                  "Content-Type":"application/json", Prefer:"return=minimal" },
+        body: JSON.stringify({ theme_id: themeId, name: name || null, body })
+      });
+      if(!r.ok) throw new Error(r.status);
+      try{ localStorage.setItem("cm-last", Date.now()); }catch(_){}
+      form.reset();
+      msg.textContent = "ありがとうございます。確認のうえ公開します。";
+      msg.classList.add("ok");
+    }catch(err){
+      msg.textContent = "送信できませんでした。時間をおいて試してください。";
+      msg.classList.add("ng");
+    }finally{
+      btn.disabled = false; btn.textContent = "送信する";
+    }
+  };
+}
 
 /* ============ 一覧 ============ */
 const listview=$("#listview"), closeList=$("#closeList");
