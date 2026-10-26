@@ -10,6 +10,6 @@
    空のままだと、コメント欄は表示されない（サイトは普通に動く）。
    ============================================================ */
 const SUPABASE = {
-  url: "",
-  anonKey: "",
+  url: "https://tyxiqmgxtqyazsizgtml.supabase.co",
+  anonKey: "sb_publishable_i3yeR1ngOk-n5BoxQ__jJw_v5CX9xyv",
 };
